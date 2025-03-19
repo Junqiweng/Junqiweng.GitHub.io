@@ -1,67 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人网页</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8f8f8;
-            color: #333;
-        }
-        header {
-            background-color: #007bff;
-            color: #fff;
-            padding: 20px;
-            text-align: center;
-        }
-        h1 {
-            margin: 0;
-            font-size: 36px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-        p {
-            line-height: 1.6;
-        }
-        footer {
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 20px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
-    </style>
+    <title>固定床压降计算器</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-line"></div>
+            <h1>固定床压降计算器</h1>
+            <h2>✨ 支持多种压降计算关联式比较 ✨</h2>
+            <div class="header-line"></div>
+        </header>
 
-<header>
-    <h1>翁俊旗</h1>
-    <p>欢迎来到我的个人网页</p>
-</header>
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="input">输入参数</button>
+            <button class="tab-btn" data-tab="results">计算结果</button>
+        </div>
 
-<div class="container">
-    <h2>关于我</h2>
-    <p>在这里写上一段简短的关于您自己的介绍，可以包括您的教育背景、专业技能、兴趣爱好等。</p>
+        <!-- Main Content -->
+        <main>
+            <!-- Input Tab -->
+            <div id="input" class="tab-content active">
+                <section class="input-section">
+                    <h3>输入参数</h3>
+                    <div class="input-grid">
+                        <div class="input-column">
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="固定床层的总高度">🔹 床层高度 (m):</label>
+                                <input type="number" id="bed_length" value="0.5" step="0.1" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="床层中的空隙体积与总体积之比">🔹 空隙率 ε:</label>
+                                <input type="number" id="void_fraction" value="0.4" step="0.01" min="0" max="1" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
+                                <input type="number" id="particle_diameter" value="0.003" step="0.001" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
+                                <input type="number" id="fluid_velocity" value="0.5" step="0.1" min="0" required>
+                            </div>
+                        </div>
+                        <div class="input-column">
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体在操作条件下的密度">🔹 流体密度 (kg/m³):</label>
+                                <input type="number" id="fluid_density" value="1.225" step="0.001" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体在操作条件下的动力粘度">🔹 流体粘度 (Pa·s):</label>
+                                <input type="number" id="fluid_viscosity" value="1.81e-5" step="1e-8" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="固定床反应器的内径">🔹 柱直径 (m):</label>
+                                <input type="number" id="column_diameter" value="0.1" step="0.01" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label>🔹 颗粒形状:</label>
+                                <select id="particle_shape">
+                                    <option value="球形">球形</option>
+                                    <option value="圆柱形">圆柱形</option>
+                                    <option value="不规则形状">不规则形状</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-    <h2>作品展示</h2>
-    <p>这里可以展示您的一些作品，比如项目案例、设计作品、摄影作品等。可以附上图片、描述和链接。</p>
+                <section class="equations-section">
+                    <h3>选择计算方程</h3>
+                    <div class="equation-list">
+                        <label class="equation-item">
+                            <input type="checkbox" id="ergun" checked>
+                            <span>📊 Ergun方程</span>
+                            <small>(综合考虑层流和湍流效应)</small>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="carman_kozeny" checked>
+                            <span>📊 Carman-Kozeny方程</span>
+                            <small>(适用于低雷诺数层流区域)</small>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="burke_plummer" checked>
+                            <span>📊 Burke-Plummer方程</span>
+                            <small>(适用于高雷诺数湍流区域)</small>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="eisfeld_schnitzlein" checked>
+                            <span>📊 Eisfeld-Schnitzlein方程</span>
+                            <small>(考虑壁面效应的改进方程)</small>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="dixon_no_wall" checked>
+                            <span>📊 Dixon方程(无壁面效应)</span>
+                            <small>(Dixon推导的无壁面效应模型)</small>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="dixon_with_wall" checked>
+                            <span>📊 Dixon方程(有壁面效应)</span>
+                            <small>(Dixon推导的考虑壁面效应模型)</small>
+                        </label>
+                    </div>
+                </section>
 
-    <h2>联系方式</h2>
-    <p>您可以在这里提供您的联系方式，比如电子邮件、电话号码、社交媒体链接等。</p>
-</div>
+                <section class="buttons-section">
+                    <button id="calculate" class="btn calc-btn">✨ 计算压降 ✨</button>
+                    <button id="clear" class="btn clear-btn">🗑️ 清除输入</button>
+                    <button id="reset" class="btn reset-btn">🔄 重置默认值</button>
+                </section>
+            </div>
 
-<footer>
-    <p>版权所有 &copy; 2024 Junqi</p>
-</footer>
+            <!-- Results Tab -->
+            <div id="results" class="tab-content">
+                <section class="results-section">
+                    <h3>✨ 计算结果详情 ✨</h3>
+                    <div class="results-content">
+                        <div class="result-text">
+                            📊 欢迎使用固定床压降计算器
+                            请输入参数并点击'✨ 计算压降 ✨'按钮开始计算
 
+                            计算结果将显示在这里...
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 固定床压降计算工具 2023</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
