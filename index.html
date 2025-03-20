@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>固定床压降计算器</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <div class="container">
@@ -32,7 +34,7 @@
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="固定床层的总高度">🔹 床层高度 (m):</label>
-                                <input type="number" id="bed_length" value="0.5" step="0.1" min="0" required>
+                                <input type="number" id="bed_length" value="1" step="0.1" min="0" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="床层中的空隙体积与总体积之比">🔹 空隙率 ε:</label>
@@ -40,11 +42,11 @@
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
-                                <input type="number" id="particle_diameter" value="0.003" step="0.001" min="0" required>
+                                <input type="number" id="particle_diameter" value="0.006" step="0.001" min="0" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="0.5" step="0.1" min="0" required>
+                                <input type="number" id="fluid_velocity" value="1" step="0.1" min="0" required>
                             </div>
                         </div>
                         <div class="input-column">
@@ -58,7 +60,7 @@
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="固定床反应器的内径">🔹 柱直径 (m):</label>
-                                <input type="number" id="column_diameter" value="0.1" step="0.01" min="0" required>
+                                <input type="number" id="column_diameter" value="0.03" step="0.01" min="0" required>
                             </div>
                             <div class="input-group">
                                 <label>🔹 颗粒形状:</label>
@@ -79,31 +81,37 @@
                             <input type="checkbox" id="ergun" checked>
                             <span>📊 Ergun方程</span>
                             <small>(综合考虑层流和湍流效应)</small>
+                            <a href="#" class="info-link equation-info" data-formula="ergun">ℹ️ 查看公式详情</a>
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="carman_kozeny" checked>
                             <span>📊 Carman-Kozeny方程</span>
                             <small>(适用于低雷诺数层流区域)</small>
+                            <a href="#" class="info-link equation-info" data-formula="carman_kozeny">ℹ️ 查看公式详情</a>
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="burke_plummer" checked>
                             <span>📊 Burke-Plummer方程</span>
                             <small>(适用于高雷诺数湍流区域)</small>
+                            <a href="#" class="info-link equation-info" data-formula="burke_plummer">ℹ️ 查看公式详情</a>
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="eisfeld_schnitzlein" checked>
                             <span>📊 Eisfeld-Schnitzlein方程</span>
                             <small>(考虑壁面效应的改进方程)</small>
+                            <a href="#" class="info-link equation-info" data-formula="eisfeld_schnitzlein">ℹ️ 查看公式详情</a>
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="dixon_no_wall" checked>
                             <span>📊 Dixon方程(无壁面效应)</span>
                             <small>(Dixon推导的无壁面效应模型)</small>
+                            <a href="#" class="info-link equation-info" data-formula="dixon_no_wall">ℹ️ 查看公式详情</a>
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="dixon_with_wall" checked>
                             <span>📊 Dixon方程(有壁面效应)</span>
                             <small>(Dixon推导的考虑壁面效应模型)</small>
+                            <a href="#" class="info-link equation-info" data-formula="dixon_with_wall">ℹ️ 查看公式详情</a>
                         </label>
                     </div>
                 </section>
@@ -121,10 +129,10 @@
                     <h3>✨ 计算结果详情 ✨</h3>
                     <div class="results-content">
                         <div class="result-text">
-                            📊 欢迎使用固定床压降计算器
-                            请输入参数并点击'✨ 计算压降 ✨'按钮开始计算
-
-                            计算结果将显示在这里...
+                            📊 欢迎使用固定床压降计算器<br><br>
+                            请输入参数并点击'✨ 计算压降 ✨'按钮开始计算<br><br>
+                            计算结果将显示在这里...<br><br>
+                            注意：您可以点击每个公式旁边的 ℹ️ 按钮查看详细说明
                         </div>
                     </div>
                 </section>
@@ -132,9 +140,19 @@
         </main>
 
         <footer>
-            <p>© 固定床压降计算工具 2023</p>
+            <p>© 固定床压降计算工具（Junqi）2025</p>
         </footer>
     </div>
     <script src="script.js"></script>
+    
+    <!-- Formula Details Modal -->
+    <div id="formulaModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="formulaDetail" class="formula-detail">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>
