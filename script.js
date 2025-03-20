@@ -90,15 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const Re = (ρ * u0 * dp) / μ;
         const Re_m = Re / (1 - ε);
         const term1 = 160.0 / Re_m;
-        const term2 = 0.922 + 16 / (Re_m + 52) ** 0.46;
+        // 修正后的公式
+        const term2 = (0.922 + 16 / Re_m ** 0.46)*(Re_m / (Re_m + 52));
         return (L * ρ * u0 ** 2 / dp * (1 - ε) / ε ** 3) * (term1 + term2);
     }
 
     function calculateDixonWithWall(L, ε, dp, u0, ρ, μ, N, alpha = 0.564) {
         const Re = (ρ * u0 * dp) / μ;
         const Re_m = Re / (1 - ε);
-        const term1 = (160 / Re_m) * (1 + (2 * alpha) / (3 * (1 - ε) * N));
-        const term2 = 0.922 + (16 / Re_m ** 0.46) * Re_m / (Re_m + 52);
+        const term1 = (160 / Re_m) * (1 + (2 * alpha) / (3 * (1 - ε) * N))**2;
+        // 修正后的公式
+        const term2 = (0.922 + (16 / (Re_m**0.46))) * (Re_m / (Re_m + 52));
         return (L * ρ * u0 ** 2 / dp * (1 - ε) / ε ** 3) * (term1 + term2);
     }
 
