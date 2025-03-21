@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气固传质和传热系数计算器</title>
+    <title>有效导热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://polyfill.io">
+    <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Critical CSS for initial render */
@@ -51,26 +52,29 @@
             document.getElementById('loading-overlay').classList.add('show');
         });
     </script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
     <script type="text/javascript">
-        // Lazy load MathJax only when needed
-        function loadMathJax() {
-            if (!window.MathJax) {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-                script.async = true;
-                document.head.appendChild(script);
+        // MathJax configuration
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
             }
-        }
+        };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header>
             <div class="header-line"></div>
-            <h1>气固传质和传热系数计算器</h1>
-            <h2>✨ 固定床反应器传递参数计算 ✨</h2>
+            <h1>有效导热系数计算器</h1>
+            <h2>✨ 固定床反应器有效导热系数计算 ✨</h2>
             <div class="header-line"></div>
             <a href="../index.html" class="back-link">返回主页</a>
         </header>
@@ -90,38 +94,38 @@
                     <div class="input-grid">
                         <div class="input-column">
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="1" step="0.1" min="0" required>
-                            </div>
-                            <div class="input-group">
                                 <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
                                 <input type="number" id="particle_diameter" value="0.006" step="0.001" min="0" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="床层中的空隙体积与总体积之比">🔹 空隙率 ε:</label>
+                                <label class="tooltip" data-tooltip="床层空隙率，通常在0.35-0.75之间">🔹 空隙率 (-):</label>
                                 <input type="number" id="void_fraction" value="0.4" step="0.01" min="0" max="1" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="固体颗粒的热导率">🔹 固体颗粒导热系数 (W/m·K):</label>
+                                <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
+                                <input type="number" id="fluid_velocity" value="1" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="input-column">
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体的热导率">🔹 流体导热系数 (W/m·K):</label>
+                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" min="0" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的密度">🔹 流体密度 (kg/m³):</label>
                                 <input type="number" id="fluid_density" value="1.225" step="0.001" min="0" required>
                             </div>
-                        </div>
-                        <div class="input-column">
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的动力粘度">🔹 流体粘度 (Pa·s):</label>
-                                <input type="number" id="fluid_viscosity" value="1.81e-5" step="1e-8" min="0" required>
+                                <label class="tooltip" data-tooltip="流体的动力黏度">🔹 流体黏度 (Pa·s):</label>
+                                <input type="text" id="fluid_viscosity" value="1.81e-5" min="0" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的热导率">🔹 流体热导率 (W/m·K):</label>
-                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" min="0" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的定压比热容">🔹 流体比热容 (J/kg·K):</label>
-                                <input type="number" id="fluid_specific_heat" value="1005" step="1" min="0" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="组分的分子扩散系数">🔹 分子扩散系数 (m²/s):</label>
-                                <input type="number" id="molecular_diffusivity" value="2e-5" step="1e-7" min="0" required>
+                                <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (J/kg·K):</label>
+                                <input type="number" id="fluid_heat_capacity" value="1005" step="1" min="0" required>
                             </div>
                         </div>
                     </div>
@@ -131,52 +135,61 @@
                     <h3>选择计算关联式</h3>
                     <div class="correlation-list">
                         <div class="correlation-group">
-                            <h4>传质系数关联式</h4>
+                            <h4>静态导热系数关联式</h4>
                             <label class="correlation-item">
-                                <input type="checkbox" id="ranz_marshall" checked>
-                                <span>📊 Ranz-Marshall关联式</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="ranz_marshall">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="yagi_kunii_static" checked>
+                                <span>📊 Yagi-Kunii静态导热</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii_static">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="wakao_funazkri" checked>
-                                <span>📊 Wakao-Funazkri关联式</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="wakao_funazkri">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="froessling_mass">
-                                <span>📊 Froessling关联式 (传质)</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="froessling_mass">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="rowe_mass">
-                                <span>📊 Rowe关联式 (传质)</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="rowe_mass">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="zbs_static" checked>
+                                <span>📊 ZBS静态导热</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="zbs_static">ℹ️ 查看公式</a>
                             </label>
                         </div>
 
                         <div class="correlation-group">
-                            <h4>传热系数关联式</h4>
+                            <h4>轴向弥散系数关联式</h4>
                             <label class="correlation-item">
-                                <input type="checkbox" id="ranz_marshall_heat" checked>
-                                <span>📊 Ranz-Marshall热传递关联式</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="ranz_marshall_heat">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="yagi_kunii_dispersion_axial" checked>
+                                <span>📊 Yagi-Kunii轴向弥散</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii_dispersion_axial">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="gnielinski" checked>
-                                <span>📊 Gnielinski关联式</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="gnielinski">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="vortmeyer_dispersion_axial" checked>
+                                <span>📊 Vortmeyer轴向弥散</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="vortmeyer_dispersion_axial">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="dittus_boelter_heat">
-                                <span>📊 Dittus-Boelter关联式</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="dittus_boelter_heat">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="hausen_heat">
-                                <span>📊 Hausen关联式</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="hausen_heat">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="edwards_axial" checked>
+                                <span>📊 Edwards轴向弥散</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="edwards_axial">ℹ️ 查看公式</a>
                             </label>
                         </div>
+
+                        <div class="correlation-group">
+                            <h4>径向弥散系数关联式</h4>
+                            <label class="correlation-item">
+                                <input type="checkbox" id="yagi_kunii_dispersion_radial" checked>
+                                <span>📊 Yagi-Kunii径向弥散</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii_dispersion_radial">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="correlation-item">
+                                <input type="checkbox" id="bauer_schlunder_dispersion" checked>
+                                <span>📊 Bauer-Schlunder弥散</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="bauer_schlunder_dispersion">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="correlation-item">
+                                <input type="checkbox" id="peclet_radial" checked>
+                                <span>📊 佩克莱数径向弥散</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="peclet_radial">ℹ️ 查看公式</a>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="correlation-combination">
+                        <h4>组合计算</h4>
+                        <p>程序将使用您选择的静态导热系数和弥散系数关联式进行组合计算。</p>
                     </div>
                 </section>
 
@@ -193,7 +206,7 @@
                     <h3>✨ 计算结果详情 ✨</h3>
                     <div class="results-content">
                         <div class="result-text">
-                            📊 欢迎使用气固传质和传热系数计算器<br><br>
+                            📊 欢迎使用有效导热系数计算器<br><br>
                             请输入参数并点击'✨ 计算传递系数 ✨'按钮开始计算<br><br>
                             计算结果将显示在这里...<br><br>
                             注意：您可以点击每个关联式旁边的 ℹ️ 按钮查看详细说明
