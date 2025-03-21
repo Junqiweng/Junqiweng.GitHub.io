@@ -149,78 +149,46 @@
                     <div class="input-grid">
                         <div class="input-column">
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="反应器内径">🔹 反应器直径 (m):</label>
-                                <input type="number" id="reactor_diameter" value="0.05" step="0.001" min="0" required>
+                                <label class="tooltip" data-tooltip="管壁传热系数">🔹 管壁传热系数 (W/m²·K):</label>
+                                <input type="number" id="wall_heat_transfer" value="100" step="1" min="0" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="反应器壁厚度">🔹 反应器壁厚度 (m):</label>
-                                <input type="number" id="wall_thickness" value="0.005" step="0.001" min="0" required>
-                            </div>
-                        </div>
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="反应器壁的热导率">🔹 壁材料导热系数 (W/m·K):</label>
-                                <input type="number" id="wall_thermal_conductivity" value="15" step="0.1" min="0" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="外部冷却套的传热系数">🔹 外部传热系数 (W/m²·K):</label>
-                                <input type="number" id="external_heat_transfer_coefficient" value="500" step="10" min="0" required>
+                                <label class="tooltip" data-tooltip="反应器管径">🔹 管径 (m):</label>
+                                <input type="number" id="tube_radius" value="0.05" step="0.001" min="0" required>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- 关联式选择 -->
                 <section class="correlation-section">
-                    <h3>关联式选择</h3>
+                    <h3>选择有效导热系数计算方程</h3>
                     <div class="correlation-list">
                         <div class="correlation-group">
-                            <h4>床层有效导热系数关联式</h4>
+                            <h4>导热系数关联式</h4>
                             <label class="correlation-item">
-                                <input type="checkbox" id="yagi_kunii" checked>
-                                <span>📊 Yagi-Kunii 模型</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii">ℹ️ 查看公式</a>
+                            <input type="checkbox" id="zehner_schlunder" checked>
+                            <span>📊 Zehner-Schlünder模型</span>
+                            <small>(考虑颗粒接触传热和辐射效应)</small>
+<a href="#" class="info-link" data-formula="zehner_schlunder">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="zehner_schlunder" checked>
-                                <span>📊 Zehner-Schlünder 模型</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="zehner_schlunder">ℹ️ 查看公式</a>
-                            </label>
-                        </div>
-
-                        <div class="correlation-group">
-                            <h4>壁面传热系数关联式</h4>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="dixon_cresswell" checked>
-                                <span>📊 Dixon-Cresswell 模型</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="dixon_cresswell">ℹ️ 查看公式</a>
+                            <input type="checkbox" id="krupiczka" checked>
+                            <span>📊 Krupiczka方程</span>
+                            <small>(简化的经验关联式)</small>
+<a href="#" class="info-link" data-formula="krupiczka">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="li_finlayson" checked>
-                                <span>📊 Li-Finlayson 模型</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="li_finlayson">ℹ️ 查看公式</a>
-                            </label>
-                        </div>
-
-                        <div class="correlation-group">
-                            <h4>总传热系数计算方法</h4>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="one_dimensional" checked>
-                                <span>📊 一维传热模型</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="one_dimensional">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="pseudo_homogeneous" checked>
-                                <span>📊 假均相模型</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="pseudo_homogeneous">ℹ️ 查看公式</a>
+                            <input type="checkbox" id="woodside_messmer" checked>
+                            <span>📊 Woodside-Messmer方程</span>
+                            <small>(基于平行导热通路模型)</small>
+<a href="#" class="info-link" data-formula="woodside_messmer">ℹ️ 查看公式</a>
                             </label>
                         </div>
                     </div>
                 </section>
 
-                <!-- 按钮区域 -->
                 <section class="buttons-section">
-                    <button id="calculate" class="btn calc-btn">✨ 计算传热系数 ✨</button>
+                    <button id="calculate" class="btn calc-btn">✨ 计算总传热系数 ✨</button>
                     <button id="clear" class="btn clear-btn">🗑️ 清除输入</button>
                     <button id="reset" class="btn reset-btn">🔄 重置默认值</button>
                 </section>
@@ -233,9 +201,9 @@
                     <div class="results-content">
                         <div class="result-text">
                             📊 欢迎使用综合传热系数计算器<br><br>
-                            请输入参数并点击'✨ 计算传热系数 ✨'按钮开始计算<br><br>
+                            请输入参数并点击'✨ 计算总传热系数 ✨'按钮开始计算<br><br>
                             计算结果将显示在这里...<br><br>
-                            注意：您可以点击每个关联式旁边的 ℹ️ 按钮查看详细说明
+                            注意：您可以点击每个公式旁边的 ℹ️ 按钮查看公式说明
                         </div>
                     </div>
                 </section>
