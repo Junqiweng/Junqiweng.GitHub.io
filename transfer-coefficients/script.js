@@ -109,6 +109,20 @@ document.addEventListener('DOMContentLoaded', function() {
             results.massTransfer.wakaoFunazkri = { Sh: Sh_wf, k: k_wf };
         }
 
+        // Froessling mass transfer correlation
+        if (document.getElementById('froessling_mass').checked) {
+            const Sh_froessling = 2 + 0.6 * Math.pow(Re, 0.5) * Math.pow(Sc, 1/3); // Same form as Ranz-Marshall
+            const k_froessling = (Sh_froessling * inputs.molecularDiffusivity) / inputs.particleDiameter;
+            results.massTransfer.froessling = { Sh: Sh_froessling, k: k_froessling };
+        }
+
+        // Rowe mass transfer correlation
+        if (document.getElementById('rowe_mass').checked) {
+            const Sh_rowe = 1.1 * (Math.pow(Re, 0.5) + 0.2 * Math.pow(Re, 0.67)) * Math.pow(Sc, 0.33);
+            const k_rowe = (Sh_rowe * inputs.molecularDiffusivity) / inputs.particleDiameter;
+            results.massTransfer.rowe = { Sh: Sh_rowe, k: k_rowe };
+        }
+
         // Heat transfer coefficients
         // Ranz-Marshall heat transfer correlation
         if (document.getElementById('ranz_marshall_heat').checked) {
@@ -124,6 +138,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const Nu_gn = 2 + Math.sqrt(Nu_lam**2 + Nu_turb**2);
             const h_gn = (Nu_gn * inputs.fluidThermalConductivity) / inputs.particleDiameter;
             results.heatTransfer.gnielinski = { Nu: Nu_gn, h: h_gn };
+        }
+
+        // Dittus-Boelter heat transfer correlation
+        if (document.getElementById('dittus_boelter_heat').checked) {
+            const n = 0.4; // for heating
+            const Nu_db = 0.023 * Math.pow(Re, 0.8) * Math.pow(Pr, n);
+            const h_db = (Nu_db * inputs.fluidThermalConductivity) / inputs.particleDiameter;
+            results.heatTransfer.dittusBoelter = { Nu: Nu_db, h: h_db };
+        }
+
+        // Hausen heat transfer correlation
+        if (document.getElementById('hausen_heat').checked) {
+            const dp_L_factor = 1; // Simplified calculation, ignoring (dp/L)^(2/3) term
+            const Nu_hausen = 0.037 * Math.pow(Re, 0.8) * Math.pow(Pr, 1/3) * dp_L_factor;
+            const h_hausen = (Nu_hausen * inputs.fluidThermalConductivity) / inputs.particleDiameter;
+            results.heatTransfer.hausen = { Nu: Nu_hausen, h: h_hausen };
         }
 
         displayResults(results);
@@ -193,6 +223,83 @@ document.addEventListener('DOMContentLoaded', function() {
                         <li>Prandtl数 (Pr): 0.6 - 10⁵</li>
                     </ul>
                 </div>`
+        },
+        froessling_mass: {
+            title: "Froessling传质关联式",
+            content: `
+                <div class="formula-section">
+                    <div class="formula-math">
+                        \\[ Sh = 2 + 0.6Re^{0.5}Sc^{1/3} \\]
+                        \\[ k = \\frac{Sh D_{AB}}{d_p} \\]
+                    </div>
+                    <p>适用范围：</p>
+                    <ul>
+                        <li>Reynolds数 (Re): 0.6 - 400</li>
+                        <li>Schmidt数 (Sc): 0.6 - 2760</li>
+                    </ul>
+                    <p>特点：</p>
+                    <ul>
+                        <li>与Ranz-Marshall关联式形式相似，但适用范围略有不同。</li>
+                    </ul>
+                </div>`
+        },
+        rowe_mass: {
+            title: "Rowe and Claxton 传质关联式",
+            content: `
+                <div class="formula-section">
+                    <div class="formula-math">
+                        \\[ Sh = 1.1 \\left( Re^{0.5} + 0.2Re^{0.67} \\right) Sc^{0.33} \\]
+                        \\[ k = \\frac{Sh D_{AB}}{d_p} \\]
+                    </div>
+                    <p>适用范围：</p>
+                    <ul>
+                        <li>Reynolds数 (Re): 1 - 1500</li>
+                        <li>Schmidt数 (Sc): 0.6 - 3000</li>
+                    </ul>
+                    <p>特点：</p>
+                    <ul>
+                        <li>考虑了低雷诺数和较高雷诺数区域，适用范围较广。</li>
+                    </ul>
+                </div>`
+        },
+        dittus_boelter_heat: {
+            title: "Dittus-Boelter传热关联式",
+            content: `
+                <div class="formula-section">
+                    <div class="formula-math">
+                        \\[ Nu = 0.023Re^{0.8}Pr^{n} \\]
+                        \\[ h = \\frac{Nu k_f}{d_p} \\]
+                    </div>
+                    <p>适用范围：</p>
+                    <ul>
+                        <li>Reynolds数 (Re): Re > 10⁴ (湍流)</li>
+                        <li>Prandtl数 (Pr): 0.7 < Pr < 160</li>
+                    </ul>
+                    <p>注意：</p>
+                    <ul>
+                        <li>n = 0.4 用于加热，n = 0.3 用于冷却，本计算器默认 n = 0.4</li>
+                    </ul>
+                </div>`
+        },
+        hausen_heat: {
+            title: "Hausen传热关联式",
+            content: `
+                <div class="formula-section">
+                    <div class="formula-math">
+                        \\[ Nu = 0.037Re^{0.8}Pr^{1/3} \\left[ 1 + \\left( \\frac{d_p}{L} \\right)^{2/3} \\right] \\]
+                        \\[ h = \\frac{Nu k_f}{d_p} \\]
+                    </div>
+                    <p>适用范围：</p>
+                    <ul>
+                        <li>Reynolds数 (Re): 10⁴ < Re < 4x10⁵</li>
+                        <li>Prandtl数 (Pr): Pr 接近 1</li>
+                        <li>L: 床层高度，此处简化计算忽略床层高度的影响</li>
+                    </ul>
+                    <p>特点：</p>
+                    <ul>
+                        <li>考虑了床层高度的影响，当 L >> dp 时，[1 + (dp/L)^(2/3)] ≈ 1，与Dittus-Boelter关联式相似</li>
+                    </ul>
+                </div>`
         }
     };
 
@@ -228,7 +335,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 </tr>`;
             }
             
+            if (results.massTransfer.froessling) {
+                html += `<tr>
+                    <td>Froessling</td>
+                    <td>${results.massTransfer.froessling.Sh.toExponential(3)}</td>
+                    <td>${results.massTransfer.froessling.k.toExponential(3)}</td>
+                </tr>`;
+            }
+
+            if (results.massTransfer.rowe) {
+                html += `<tr>
+                    <td>Rowe</td>
+                    <td>${results.massTransfer.rowe.Sh.toExponential(3)}</td>
+                    <td>${results.massTransfer.rowe.k.toExponential(3)}</td>
+                </tr>`;
+            }
+            
             html += '</table>';
+             html += `<div class="formula-detail-description">
+                    <p>
+                        注意：
+                        Froessling关联式与Ranz-Marshall关联式形式相同，但适用范围略有不同;
+                        Rowe关联式适用范围较广。
+                        Froessling关联式通常用于描述单个球形颗粒的传质。
+                    </p>
+                </div>`
         }
 
         if (Object.keys(results.heatTransfer).length > 0) {
@@ -251,9 +382,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${results.heatTransfer.gnielinski.h.toExponential(3)}</td>
                 </tr>`;
             }
+            if (results.heatTransfer.dittusBoelter) {
+                html += `<tr>
+                    <td>Dittus-Boelter</td>
+                    <td>${results.heatTransfer.dittusBoelter.Nu.toExponential(3)}</td>
+                    <td>${results.heatTransfer.dittusBoelter.h.toExponential(3)}</td>
+                </tr>`;
+            }
+            if (results.heatTransfer.hausen) {
+                html += `<tr>
+                    <td>Hausen</td>
+                    <td>${results.heatTransfer.hausen.Nu.toExponential(3)}</td>
+                    <td>${results.heatTransfer.hausen.h.toExponential(3)}</td>
+                </tr>`;
+            }
             
             html += '</table>';
         }
+
+
 
         resultsContent.innerHTML = html;
     }
