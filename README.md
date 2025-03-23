@@ -1,36 +1,66 @@
 # UI 改进项目
 
-本项目似乎是一个小型 Web 应用程序集合，专注于 UI 改进，特别是与工程计算相关的应用。
+本项目是一个工程计算工具集合，提供了多个专业的Web应用程序，用于各种工程计算和分析。
 
 ## 项目结构
 
-本项目包含以下目录：123
+本项目包含以下工具目录：
 
-- **Pressure-drop/**：包含与压降计算工具相关的文件。
-    - `index.html`：压降工具的主要 HTML 文件。
-    - `script.js`：压降工具功能的 JavaScript 文件。
-    - `styles.css`：用于设置压降工具样式的 CSS 文件。
+- **Dispersion-coefficients/**：扩散系数计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
 
-- **Gas-solid-coefficients/**：包含与传热系数计算工具相关的文件。
-    - `index.html`：传热系数工具的主要 HTML 文件。
-    - `script.js`：传热系数工具功能的 JavaScript 文件。
-    - `styles.css`：用于设置传热系数工具样式的 CSS 文件。
+- **Gas-solid-coefficients/**：气固传热系数计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
 
-- `index.html`：可能是整个 UI 改进项目的入口点或主页，可能链接到各个工具。
+- **Overall-thermal-coefficient/**：总传热系数计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
 
-## 目的
+- **Pressure-drop/**：压降计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
 
-根据目录和文件名，该项目似乎专注于为工程计算创建用户友好的 Web 界面，特别是针对：
+- **Thermal-conductivity/**：导热系数计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
 
-1. **压降计算**：用于计算系统中压降的工具，可能用于流体动力学或相关工程领域。
-2. **传热系数计算**：用于计算传热系数的工具，传热系数用于各种工程学科，如热传递、质量传递和动量传递。
+- **Tube_pressure_drop/**：管道压降计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
+
+- **Wall-thermal-conductivity/**：壁面传热系数计算工具
+    - `index.html`：工具的主页面
+    - `script.js`：计算逻辑实现
+
+## 公共文件
+
+- `index.html`：项目主页，提供所有工具的导航入口
+- `global-styles.css`：全局样式文件，确保所有工具保持一致的视觉风格
+- `style-guide.md`：样式指南文档，用于维护项目的设计一致性
+
+## 功能简介
+
+该项目提供了一系列专业的工程计算工具：
+
+1. **扩散系数计算**：用于计算物质在介质中的扩散系数
+2. **气固传热系数计算**：计算气固相间的传热系数
+3. **总传热系数计算**：计算系统的总传热系数
+4. **压降计算**：计算流体系统中的压力损失
+5. **导热系数计算**：计算材料的导热系数
+6. **管道压降计算**：专门用于管道系统的压降分析
+7. **壁面传热系数计算**：计算壁面的传热系数
 
 ## 如何使用
 
-要使用这些工具，只需在 Web 浏览器中打开每个目录中的 `index.html` 文件。
+每个工具都可以通过以下方式访问：
 
-- 对于压降工具：`Pressure-drop/index.html`
-- 对于传热系数工具：`Gas-solid-coefficients/index.html`
-- 对于主项目页面（如果适用）：`index.html`
+1. 打开项目根目录中的 `index.html` 文件，通过主页导航到所需工具
+2. 直接打开对应工具目录中的 `index.html` 文件
 
-有关每个工具的具体功能和用法的更多详细信息，请参见相应工具的 `index.html` 和 `script.js` 文件。
+例如：
+- 扩散系数计算工具：打开 `Dispersion-coefficients/index.html`
+- 压降计算工具：打开 `Pressure-drop/index.html`
+
+每个工具都提供了直观的用户界面和即时计算功能，只需输入所需参数即可获得计算结果。
