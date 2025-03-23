@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>固定床压降计算器</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://polyfill.io">
+    <!-- 引入全局样式表 -->
+    <link rel="stylesheet" href="../global-styles.css">
+    <style>
+        /* Critical CSS for initial render */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s linear 0.3s, opacity 0.3s;
+        }
+        
+        .loading-overlay.show {
+            visibility: visible;
+            opacity: 1;
+            transition-delay: 0s;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Loading indicator management
+        window.addEventListener('beforeunload', function() {
+            document.getElementById('loading-overlay').classList.add('show');
+        });
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
+    <!-- Load MathJax -->
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            svg: {
+                fontCache: 'global',
+                scale: 1.1
+            },
+            startup: {
+                typeset: false
+            },
+            options: {
+                enableMenu: false
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-line"></div>
+            <h1>固定床压降计算器</h1>
+            <h2>✨ 支持多种压降计算关联式比较 ✨</h2>
+            <div class="header-line"></div>
+            <a href="../index.html" class="back-link">返回主页</a>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="input">输入参数</button>
+            <button class="tab-btn" data-tab="results">计算结果</button>
+        </div>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Input Tab -->
+            <div id="input" class="tab-content active">
+                <section class="input-section">
+                    <h3>输入参数</h3>
+                    <div class="input-grid">
+                        <div class="input-column">
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="固定床层的总高度">🔹 床层高度 (m):</label>
+                                <input type="number" id="bed_length" value="1" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="床层中的空隙体积与总体积之比">🔹 空隙率 ε:</label>
+                                <input type="number" id="void_fraction" value="0.4" min="0.1" max="0.999" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
+                                <input type="number" id="particle_diameter" value="0.006" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
+                                <input type="number" id="fluid_velocity" value="1" min="0" required>
+                            </div>
+                        </div>
+                        <div class="input-column">
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体在操作条件下的密度">🔹 流体密度 (kg/m³):</label>
+                                <input type="number" id="fluid_density" value="1.225" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体在操作条件下的动力粘度">🔹 流体粘度 (Pa·s):</label>
+                                <input type="number" id="fluid_viscosity" value="1.81e-5" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="固定床反应器的内径">🔹 柱直径 (m):</label>
+                                <input type="number" id="column_diameter" value="0.03" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label>🔹 颗粒形状:</label>
+                                <select id="particle_shape">
+                                    <option value="球形">球形</option>
+                                    <option value="圆柱形">圆柱形</option>
+                                    <option value="不规则形状">不规则形状</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="equations-section">
+                    <h3>选择计算方程</h3>
+                    <div class="equation-list">
+                        <label class="equation-item">
+                            <input type="checkbox" id="ergun" checked>
+                            <span>📊 Ergun方程</span>
+                            <small>(综合考虑层流和湍流效应)</small>
+                            <a href="#" class="info-link equation-info" data-formula="ergun">ℹ️ 查看公式</a>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="eisfeld_schnitzlein" checked>
+                            <span>📊 Eisfeld-Schnitzlein方程</span>
+                            <small>(考虑壁面效应的改进方程)</small>
+                            <a href="#" class="info-link equation-info" data-formula="eisfeld_schnitzlein">ℹ️ 查看公式</a>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="dixon_no_wall" checked>
+                            <span>📊 Dixon方程(无壁面效应)</span>
+                            <small>(Dixon推导的无壁面效应模型)</small>
+                            <a href="#" class="info-link equation-info" data-formula="dixon_no_wall">ℹ️ 查看公式</a>
+                        </label>
+                        <label class="equation-item">
+                            <input type="checkbox" id="dixon_with_wall" checked>
+                            <span>📊 Dixon方程(有壁面效应)</span>
+                            <small>(Dixon推导的考虑壁面效应模型)</small>
+                            <a href="#" class="info-link equation-info" data-formula="dixon_with_wall">ℹ️ 查看公式</a>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="buttons-section">
+                    <button id="calculate" class="btn calc-btn">✨ 计算压降 ✨</button>
+                    <button id="clear" class="btn clear-btn">🗑️ 清除输入</button>
+                    <button id="reset" class="btn reset-btn">🔄 重置默认值</button>
+                </section>
+            </div>
+
+            <!-- Results Tab -->
+            <div id="results" class="tab-content">
+                <section class="results-section">
+                    <h3>✨ 计算结果详情 ✨</h3>
+                    <div class="results-content">
+                        <div class="result-text" id="result-content-area">
+                            <div class="welcome-message">
+                                <div class="icon-container">
+                                    <i class="fas fa-chart-line pulse-animation"></i>
+                                </div>
+                                <h4>欢迎使用固定床压降计算器</h4>
+                                <p>请在「输入参数」标签页中输入参数并点击<br>「✨ 计算压降 ✨」按钮开始计算</p>
+                                <div class="tips-container">
+                                    <div class="tip-item">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>计算结果将显示在这里</span>
+                                    </div>
+                                    <div class="tip-item">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>您可以点击每个公式旁边的 ℹ️ 按钮查看详细说明</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 固定床反应器工具集（Junqi）2025</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+    
+    <!-- Formula Details Modal -->
+    <div id="formulaModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="formulaDetail" class="formula-detail">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div style="margin-top: 15px; color: var(--primary-color)">加载中...</div>
+    </div>
+</body>
+</html>
