@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>反混系数计算器</title>
+    <title>反混系数计算器 - 多孔载体内颗粒间流体轴向和径向扩散系数</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://polyfill.io">
-    <link rel="stylesheet" href="../styles.css">
-    <link rel="stylesheet" href="styles.css">
+    <!-- 引入全局样式表 -->
+    <link rel="stylesheet" href="../global-styles.css">
     <style>
+        /* Critical CSS for initial render */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -44,22 +45,41 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* 参数表格中数学符号样式 */
+        .symbol-cell {
+            font-size: 1.2em;
+        }
     </style>
     <script>
+        // Loading indicator management
         window.addEventListener('beforeunload', function() {
             document.getElementById('loading-overlay').classList.add('show');
         });
     </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <script type="text/javascript">
-        function loadMathJax() {
-            if (!window.MathJax) {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-                script.async = true;
-                document.head.appendChild(script);
+    <!-- Load MathJax -->
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            svg: {
+                fontCache: 'global',
+                scale: 1.1
+            },
+            startup: {
+                typeset: false
+            },
+            options: {
+                enableMenu: false
             }
-        }
+        };
     </script>
 </head>
 <body>
@@ -67,8 +87,8 @@
         <!-- Header -->
         <header>
             <div class="header-line"></div>
-            <h1>反混系数计算器</h1>
-            <h2>✨ 固定床反应器反混系数计算 ✨</h2>
+            <h1>固定床反应器反混系数计算器</h1>
+            <h2>✨ 轴向和径向反混系数多模型对比计算 ✨</h2>
             <div class="header-line"></div>
             <a href="../index.html" class="back-link">返回主页</a>
         </header>
@@ -88,72 +108,38 @@
                     <div class="input-grid">
                         <div class="input-column">
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体在空管中的表观流速">🔹 流体表观速度 <i>u</i><sub>0</sub> (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="1" required>
+                                <label class="tooltip" data-tooltip="流体在空管中的表观流速">🔹 流体表观速度 (m/s):</label>
+                                <input type="number" id="fluid_velocity" value="1" step="any" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="填充颗粒的等效直径 (0.5-6 mm)">🔹 颗粒直径 <i>d</i><sub>p</sub> (m):</label>
-                                <input type="number" id="particle_diameter" value="0.006" required>
+                                <label class="tooltip" data-tooltip="填充颗粒的等效直径">🔹 颗粒直径 (m):</label>
+                                <input type="number" id="particle_diameter" value="0.006" step="any" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的密度">🔹 流体密度 <i>ρ</i> (kg/m³):</label>
-                                <input type="number" id="fluid_density" value="1.225" required>
-                            </div>
-                        </div>
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="固定床的总高度 (H/dp > 50)">🔹 床层高度 <i>H</i> (m):</label>
-                                <input type="number" id="bed_height" value="1" required>
+                                <label class="tooltip" data-tooltip="流体的密度">🔹 流体密度 (kg/m³):</label>
+                                <input type="number" id="fluid_density" value="1.225" step="any" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="柱直径与颗粒直径比 (> 5)">🔹 管径/颗粒直径比 <i>N</i> (<i>D</i>/<i>d</i><sub>p</sub>):</label>
-                                <input type="number" id="tube_ratio" value="10" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的动力黏度">🔹 流体黏度 <i>μ</i> (Pa·s):</label>
-                                <input type="number" id="fluid_viscosity" value="1.81e-5" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="input-grid">
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体中组分的分子扩散系数">🔹 分子扩散系数 <i>D</i><sub>m</sub> (m²/s):</label>
-                                <input type="number" id="molecular_diffusivity" value="2.0e-5" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="床层空隙率，通常为0.3-0.5">🔹 床层空隙率 <i>ε</i>:</label>
-                                <input type="number" id="bed_porosity" value="0.4" min="0.1" max="0.9" step="0.01" required>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="input-section">
-                    <h3>导热参数</h3>
-                    <div class="input-grid">
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的导热系数">🔹 流体导热系数 (<i>λ</i><sub>f</sub>):</label>
-                                <input type="number" id="fluid-conductivity" value="0.6" required>
-                                <span class="units">W/m·K</span>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="固体颗粒的导热系数">🔹 颗粒导热系数 (<i>λ</i><sub>s</sub>):</label>
-                                <input type="number" id="solid-conductivity" value="15" required>
-                                <span class="units">W/m·K</span>
+                                <label class="tooltip" data-tooltip="流体中组分的分子扩散系数">🔹 分子扩散系数 (m²/s):</label>
+                                <input type="number" id="molecular_diffusivity" value="2e-5" step="any" required>
                             </div>
                         </div>
                         <div class="input-column">
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (<i>c</i><sub>p</sub>):</label>
-                                <input type="number" id="fluid-heat-capacity" value="4200" required>
-                                <span class="units">J/kg·K</span>
+                                <label class="tooltip" data-tooltip="固定床的总高度">🔹 床层高度 (m):</label>
+                                <input type="number" id="bed_height" value="1" step="any" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="计算导热系数时使用普朗特数而非施密特数">🔹 使用导热参数计算
-                                    <input type="checkbox" id="use-thermal-params">
-                                </label>
+                                <label class="tooltip" data-tooltip="柱直径与颗粒直径比">🔹 管径/颗粒直径比 (D/dp):</label>
+                                <input type="number" id="tube_ratio" value="10" step="any" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体的动力黏度">🔹 流体黏度 (Pa·s):</label>
+                                <input type="number" id="fluid_viscosity" value="1.8e-5" step="any" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="床层空隙率">🔹 床层空隙率 ε:</label>
+                                <input type="number" id="bed_porosity" value="0.4" step="any" required>
                             </div>
                         </div>
                     </div>
@@ -212,9 +198,11 @@
                     </div>
                 </section>
 
-                <div class="button-section">
-                    <button id="calculate-button" class="calculate-button">✨ 计算 ✨</button>
-                </div>
+                <section class="buttons-section">
+                    <button id="calculate-button" class="btn calc-btn">✨ 计算反混系数 ✨</button>
+                    <button id="clear-button" class="btn clear-btn">🗑️ 清除输入</button>
+                    <button id="reset-button" class="btn reset-btn">🔄 重置默认值</button>
+                </section>
             </div>
 
             <!-- Results Tab -->

@@ -6,8 +6,8 @@
     <title>有效导热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://polyfill.io">
-    <link rel="stylesheet" href="../styles.css">
-    <link rel="stylesheet" href="styles.css">
+    <!-- 引入全局样式表 -->
+    <link rel="stylesheet" href="../global-styles.css">
     <style>
         /* Critical CSS for initial render */
         .loading-overlay {
@@ -52,21 +52,30 @@
             document.getElementById('loading-overlay').classList.add('show');
         });
     </script>
-    <script type="text/javascript">
-        // MathJax configuration
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
+    <!-- Load MathJax -->
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
                 processEscapes: true
             },
+            svg: {
+                fontCache: 'global',
+                scale: 1.1
+            },
+            startup: {
+                typeset: false
+            },
             options: {
-                ignoreHtmlClass: 'tex2jax_ignore',
-                processHtmlClass: 'tex2jax_process'
+                enableMenu: false
             }
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 </head>
 <body>
     <div class="container">
@@ -95,37 +104,37 @@
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
-                                <input type="number" id="particle_diameter" value="0.006" step="0.001" min="0" required>
+                                <input type="number" id="particle_diameter" value="0.006" step="0.001" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="床层空隙率，通常在0.35-0.75之间">🔹 空隙率 (-):</label>
-                                <input type="number" id="void_fraction" value="0.4" step="0.01" min="0" max="1" required>
+                                <input type="number" id="void_fraction" value="0.4" step="0.01" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="固体颗粒的热导率">🔹 固体颗粒导热系数 (W/m·K):</label>
-                                <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" min="0" required>
+                                <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="1" step="0.01" min="0" required>
+                                <input type="number" id="fluid_velocity" value="1" step="0.01" required>
                             </div>
                         </div>
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的热导率">🔹 流体导热系数 (W/m·K):</label>
-                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" min="0" required>
+                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的密度">🔹 流体密度 (kg/m³):</label>
-                                <input type="number" id="fluid_density" value="1.225" step="0.001" min="0" required>
+                                <input type="number" id="fluid_density" value="1.225" step="0.001" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的动力黏度">🔹 流体黏度 (Pa·s):</label>
-                                <input type="text" id="fluid_viscosity" value="1.81e-5" min="0" required>
+                                <input type="text" id="fluid_viscosity" value="1.81e-5" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (J/kg·K):</label>
-                                <input type="number" id="fluid_heat_capacity" value="1005" step="1" min="0" required>
+                                <input type="number" id="fluid_heat_capacity" value="1005" step="1" required>
                             </div>
                         </div>
                     </div>
@@ -205,11 +214,24 @@
                 <section class="results-section">
                     <h3>✨ 计算结果详情 ✨</h3>
                     <div class="results-content">
-                        <div class="result-text">
-                            📊 欢迎使用有效导热系数计算器<br><br>
-                            请输入参数并点击'✨ 计算传递系数 ✨'按钮开始计算<br><br>
-                            计算结果将显示在这里...<br><br>
-                            注意：您可以点击每个关联式旁边的 ℹ️ 按钮查看详细说明
+                        <div class="result-text" id="result-content-area">
+                            <div class="welcome-message">
+                                <div class="icon-container">
+                                    <i class="fas fa-fire pulse-animation"></i>
+                                </div>
+                                <h4>欢迎使用有效导热系数计算器</h4>
+                                <p>请在「输入参数」标签页中输入参数并点击<br>「✨ 计算传递系数 ✨」按钮开始计算</p>
+                                <div class="tips-container">
+                                    <div class="tip-item">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>计算结果将显示在这里</span>
+                                    </div>
+                                    <div class="tip-item">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>您可以点击每个关联式旁边的 ℹ️ 按钮查看详细说明</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

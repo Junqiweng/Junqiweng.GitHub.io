@@ -6,7 +6,8 @@
     <title>综合传热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://polyfill.io">
-    <link rel="stylesheet" href="styles.css">
+    <!-- 引入全局样式表 -->
+    <link rel="stylesheet" href="../global-styles.css">
     <style>
         /* Critical CSS for initial render */
         .loading-overlay {
@@ -69,6 +70,9 @@
             },
             startup: {
                 typeset: false
+            },
+            options: {
+                enableMenu: false
             }
         };
     </script>
@@ -102,15 +106,15 @@
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体在固定床中的表观流速">🔹 流体表观速度 (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="1" step="0.01" min="0" required>
+                                <input type="number" id="fluid_velocity" value="1" step="0.01" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
-                                <input type="number" id="particle_diameter" value="0.006" step="0.001" min="0" required>
+                                <input type="number" id="particle_diameter" value="0.006" step="0.001" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="床层中的空隙体积与总体积之比">🔹 空隙率 ε:</label>
-                                <input type="number" id="void_fraction" value="0.4" step="0.01" min="0" max="1" required>
+                                <input type="number" id="void_fraction" value="0.4" step="0.01" required>
                             </div>
                         </div>
                     </div>
@@ -121,25 +125,25 @@
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的导热系数">🔹 流体导热系数 (W/m·K):</label>
-                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" min="0" required>
+                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="固体颗粒的导热系数">🔹 固体颗粒导热系数 (W/m·K):</label>
-                                <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" min="0" required>
+                                <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" required>
                             </div>
                         </div>
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体密度">🔹 流体密度 (kg/m³):</label>
-                                <input type="number" id="fluid_density" value="1.225" step="0.001" min="0" required>
+                                <input type="number" id="fluid_density" value="1.225" step="0.001" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体动力粘度">🔹 流体粘度 (Pa·s):</label>
-                                <input type="number" id="fluid_viscosity" value="1.81e-5" step="1e-6" min="0" required>
+                                <input type="number" id="fluid_viscosity" value="1.81e-5" step="1e-6" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (J/kg·K):</label>
-                                <input type="number" id="fluid_heat_capacity" value="1005" step="0.1" min="0" required>
+                                <input type="number" id="fluid_heat_capacity" value="1005" step="0.1" required>
                             </div>
                         </div>
                     </div>
@@ -150,11 +154,11 @@
                         <div class="input-column">
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="管壁传热系数">🔹 管壁传热系数 (W/m²·K):</label>
-                                <input type="number" id="wall_heat_transfer" value="100" step="1" min="0" required>
+                                <input type="number" id="wall_heat_transfer" value="100" step="1" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="反应器管径">🔹 管径 (m):</label>
-                                <input type="number" id="tube_radius" value="0.05" step="0.001" min="0" required>
+                                <input type="number" id="tube_radius" value="0.05" step="0.001" required>
                             </div>
                         </div>
                     </div>
