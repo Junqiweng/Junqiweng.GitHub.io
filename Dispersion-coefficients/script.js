@@ -58,7 +58,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 单个字段验证
     function validateField(fieldId) {
+        console.log(`验证字段: ${fieldId}`);
         const field = typeof fieldId === 'string' ? document.getElementById(fieldId) : fieldId;
+        
+        if (!field) {
+            console.error(`找不到字段元素: ${fieldId}`);
+            return false;
+        }
+        
         const value = field.value.trim();
         
         // 清除之前的错误状态
@@ -74,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (field.hasAttribute('data-user-input')) {
                 field.classList.add('error');
                 showErrorTooltip(field.id, '此字段不能为空');
+                console.log(`${fieldId}: 空值错误`);
                 return false;
             }
             return true;
@@ -88,9 +96,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!numberPattern.test(value)) {
             field.classList.add('error');
             showErrorTooltip(field.id, '请输入有效的数字');
+            console.log(`${fieldId}: 无效数字格式`);
             return false;
         }
         
+        console.log(`${fieldId}: 验证通过，值为 ${value}`);
         // 接受任何数值，不进行额外限制
         return true;
     }
@@ -255,494 +265,515 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Calculate Function
     function calculate() {
-        // 清除之前的错误状态
-        const inputs = document.querySelectorAll('input[type="number"]');
-        inputs.forEach(input => input.classList.remove('error'));
-        
-        // 移除之前的错误提示
-        clearErrorTooltips();
-        
-        // 验证所有输入字段
-        let hasError = false;
-        
-        const inputFields = [
-            'fluid_velocity', 'particle_diameter', 'bed_height', 'tube_ratio',
-            'fluid_density', 'fluid_viscosity', 'molecular_diffusivity', 'bed_porosity'
-        ];
-        
-        // 验证所有字段
-        inputFields.forEach(fieldId => {
-            if (!validateField(fieldId)) {
-                hasError = true;
-            }
-        });
-        
-        // 如果有错误，停止计算
-        if (hasError) {
-            return;
-        }
-        
-        // 自定义函数解析数字，确保正确处理科学计数法和任意精度小数
-        function parseNumberValue(value) {
-            // 检查是否为科学计数法
-            if (typeof value === 'string' && (value.includes('e') || value.includes('E'))) {
-                return Number(value);
+        console.log('计算函数开始执行');
+        try {
+            // 清除之前的错误状态
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => input.classList.remove('error'));
+            
+            // 移除之前的错误提示
+            clearErrorTooltips();
+            
+            // 验证所有输入字段
+            let hasError = false;
+            
+            const inputFields = [
+                'fluid_velocity', 'particle_diameter', 'bed_height', 'tube_ratio',
+                'fluid_density', 'fluid_viscosity', 'molecular_diffusivity', 'bed_porosity'
+            ];
+            
+            console.log('开始验证输入字段');
+            // 验证所有字段
+            inputFields.forEach(fieldId => {
+                if (!validateField(fieldId)) {
+                    hasError = true;
+                    console.log(`字段 ${fieldId} 验证失败`);
+                }
+            });
+            
+            // 如果有错误，停止计算
+            if (hasError) {
+                console.log('输入验证失败，计算终止');
+                return;
             }
             
-            // 使用parseFloat解析普通数字
-            const parsed = parseFloat(value);
+            // 自定义函数解析数字，确保正确处理科学计数法和任意精度小数
+            function parseNumberValue(value) {
+                // 检查是否为科学计数法
+                if (typeof value === 'string' && (value.includes('e') || value.includes('E'))) {
+                    return Number(value);
+                }
+                
+                // 使用parseFloat解析普通数字
+                const parsed = parseFloat(value);
+                
+                // 确保返回有效数字，如果解析失败返回0
+                return isNaN(parsed) ? 0 : parsed;
+            }
             
-            // 确保返回有效数字，如果解析失败返回0
-            return isNaN(parsed) ? 0 : parsed;
+            // 获取输入值（使用自定义解析函数）
+            const fluidVelocity = parseNumberValue(document.getElementById('fluid_velocity').value);
+            const particleDiameter = parseNumberValue(document.getElementById('particle_diameter').value);
+            const bedHeight = parseNumberValue(document.getElementById('bed_height').value);
+            const tubeRatio = parseNumberValue(document.getElementById('tube_ratio').value);
+            const fluidDensity = parseNumberValue(document.getElementById('fluid_density').value);
+            const fluidViscosity = parseNumberValue(document.getElementById('fluid_viscosity').value);
+            const molecularDiffusivity = parseNumberValue(document.getElementById('molecular_diffusivity').value);
+            const bedPorosity = parseNumberValue(document.getElementById('bed_porosity').value);
+            
+            // 直接使用用户输入的值，不进行替换
+            const inputs_obj = {
+                fluidVelocity: fluidVelocity,
+                particleDiameter: particleDiameter,
+                bedHeight: bedHeight,
+                tubeRatio: tubeRatio,
+                fluidDensity: fluidDensity,
+                fluidViscosity: fluidViscosity,
+                molecularDiffusivity: molecularDiffusivity,
+                bedPorosity: bedPorosity
+            };
+            
+            // Calculate dimensionless numbers
+            const Re = (inputs_obj.fluidVelocity * inputs_obj.particleDiameter * inputs_obj.fluidDensity) / inputs_obj.fluidViscosity;
+            const Sc = inputs_obj.fluidViscosity / (inputs_obj.fluidDensity * inputs_obj.molecularDiffusivity);
+            const Pe_m = Re * Sc;
+
+            // Calculate axial dispersion coefficients
+            const tubeDiameter = inputs_obj.tubeRatio * inputs_obj.particleDiameter;
+            const epsilon = inputs_obj.bedPorosity;  // Using input bed porosity instead of hardcoded value
+            
+            // Edwards-Richardson 模型
+            const molDiffusionTerm = inputs_obj.molecularDiffusivity / (inputs_obj.fluidDensity * inputs_obj.fluidViscosity);
+            const Pe_ax_ER_inv = (0.73 * epsilon) / (Re * Sc) + 0.5 / (1 + 9.7 * epsilon / (Re * Sc));
+            const D_ax_ER = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_ax_ER_inv;
+            
+            // Zehner-Schlünder 模型
+            const Pe_ax_ZS_inv = (1 - Math.sqrt(1 - epsilon)) / (Re * Sc) + 0.5;
+            const D_ax_ZS = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_ax_ZS_inv;
+            
+            // Gunn 模型
+            const tau = epsilon / Math.pow(1 - epsilon, 1/3);
+            const Pe_ax_Gunn_inv = (epsilon / (tau * Re * Sc)) + 0.5;
+            const Pe_ax_Gunn = 1 / Pe_ax_Gunn_inv;  // 修改变量名
+            const D_ax_Gunn = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / Pe_ax_Gunn;
+            
+            // Wakao-Kaguei 模型
+            const D_ax_WK = inputs_obj.molecularDiffusivity * epsilon + 0.5 * inputs_obj.fluidVelocity * inputs_obj.particleDiameter;
+
+            // Calculate radial dispersion coefficients
+            // Edwards-Richardson 径向模型
+            const D_rad_ER = inputs_obj.molecularDiffusivity * epsilon + 0.073 * inputs_obj.fluidVelocity * inputs_obj.particleDiameter / (1 + 9.7 * inputs_obj.molecularDiffusivity / (inputs_obj.fluidVelocity * inputs_obj.particleDiameter));
+            
+            // Zehner-Schlünder 径向模型
+            const N = inputs_obj.tubeRatio; // 管径比
+            const Pe_rad_ZS_inv = (epsilon / (9.5 * Re * Sc)) + (1 / 11);
+            const D_rad_ZS = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_ZS_inv;
+            
+            // Gunn 径向模型
+            const D_rad_Gunn = inputs_obj.molecularDiffusivity * epsilon * (1 + 0.11 * Math.pow(Re * Sc, 0.8)) / (1 + 10.5 * inputs_obj.molecularDiffusivity / (inputs_obj.fluidVelocity * inputs_obj.particleDiameter));
+            
+            // Wakao-Kaguei 径向模型
+            const Pe_rad_WK_inv = (0.7 * epsilon) / (Re * Sc) + 0.1;
+            const D_rad_WK = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_WK_inv;
+
+            // 计算Lerou-Wammes模型（替换了以前的ER径向模型）
+            const Pe_rad_Lerou = 8 / (1 + 20 / Math.pow(N, 2));
+            const D_rad_Lerou = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / Pe_rad_Lerou;
+            
+            // 计算Bauer模型
+            const Pe_rad_Bauer_inv = (0.73 * epsilon) / (Re * Sc) + 1 / (7 * Math.pow(2 - (1 - 2/N), 2));
+            const D_rad_Bauer = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_Bauer_inv;
+            
+            // Specchia模型
+            const Pe_rad_Specchia_inv = (epsilon / (10 * Re * Sc)) + (1 / 12);
+            const D_rad_Specchia = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_Specchia_inv;
+
+            // Calculate Peclet numbers
+            const Pe_ax_standard = 2.0; // 标准轴向佩克列数
+            const D_ax_standard = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / Pe_ax_standard;
+            
+            const Pe_ax_ER = 1 / Pe_ax_ER_inv;
+            const Pe_ax_ZS = 1 / Pe_ax_ZS_inv;
+            // Gunn 模型已经在前面计算为 Pe_ax_Gunn
+            const Pe_ax_WK = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / D_ax_WK;
+            
+            // 径向
+            const Pe_rad_ER = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / D_rad_ER;
+            const Pe_rad_ZS = 1 / Pe_rad_ZS_inv;
+            const Pe_rad_Gunn = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / D_rad_Gunn;
+            const Pe_rad_WK = 1 / Pe_rad_WK_inv;
+            const Pe_rad_Bauer = 1 / Pe_rad_Bauer_inv;
+            const Pe_rad_Specchia = 1 / Pe_rad_Specchia_inv;
+
+            // Prepare results object
+            const results = {
+                // Axial dispersion coefficients
+                D_ax_ER,
+                D_ax_ZS,
+                D_ax_Gunn,
+                D_ax_WK,
+                
+                // Radial dispersion coefficients
+                D_rad_ER,
+                D_rad_ZS,
+                D_rad_Gunn,
+                D_rad_WK,
+                D_rad_Lerou,
+                D_rad_Bauer,
+                D_rad_Specchia,
+                
+                // Peclet numbers - axial
+                Pe_ax_ER,
+                Pe_ax_ZS,
+                Pe_ax_Gunn,
+                Pe_ax_WK,
+                
+                // Peclet numbers - radial
+                Pe_rad_ER,
+                Pe_rad_ZS,
+                Pe_rad_Gunn,
+                Pe_rad_WK,
+                Pe_rad_Lerou,
+                Pe_rad_Bauer,
+                Pe_rad_Specchia
+            };
+
+            // Display results in the UI
+            displayResults(inputs_obj, results);
+            
+            // Switch to results tab
+            document.querySelector('[data-tab="results"]').click();
+        } catch (error) {
+            console.error('计算过程中发生错误:', error);
+            alert('计算过程中发生错误: ' + error.message);
         }
-        
-        // 获取输入值（使用自定义解析函数）
-        const fluidVelocity = parseNumberValue(document.getElementById('fluid_velocity').value);
-        const particleDiameter = parseNumberValue(document.getElementById('particle_diameter').value);
-        const bedHeight = parseNumberValue(document.getElementById('bed_height').value);
-        const tubeRatio = parseNumberValue(document.getElementById('tube_ratio').value);
-        const fluidDensity = parseNumberValue(document.getElementById('fluid_density').value);
-        const fluidViscosity = parseNumberValue(document.getElementById('fluid_viscosity').value);
-        const molecularDiffusivity = parseNumberValue(document.getElementById('molecular_diffusivity').value);
-        const bedPorosity = parseNumberValue(document.getElementById('bed_porosity').value);
-        
-        // 直接使用用户输入的值，不进行替换
-        const inputs_obj = {
-            fluidVelocity: fluidVelocity,
-            particleDiameter: particleDiameter,
-            bedHeight: bedHeight,
-            tubeRatio: tubeRatio,
-            fluidDensity: fluidDensity,
-            fluidViscosity: fluidViscosity,
-            molecularDiffusivity: molecularDiffusivity,
-            bedPorosity: bedPorosity
-        };
-        
-        // Calculate dimensionless numbers
-        const Re = (inputs_obj.fluidVelocity * inputs_obj.particleDiameter * inputs_obj.fluidDensity) / inputs_obj.fluidViscosity;
-        const Sc = inputs_obj.fluidViscosity / (inputs_obj.fluidDensity * inputs_obj.molecularDiffusivity);
-        const Pe_m = Re * Sc;
-
-        // Calculate axial dispersion coefficients
-        const tubeDiameter = inputs_obj.tubeRatio * inputs_obj.particleDiameter;
-        const epsilon = inputs_obj.bedPorosity;  // Using input bed porosity instead of hardcoded value
-        
-        // Edwards-Richardson 模型
-        const molDiffusionTerm = inputs_obj.molecularDiffusivity / (inputs_obj.fluidDensity * inputs_obj.fluidViscosity);
-        const Pe_ax_ER_inv = (0.73 * epsilon) / (Re * Sc) + 0.5 / (1 + 9.7 * epsilon / (Re * Sc));
-        const D_ax_ER = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_ax_ER_inv;
-        
-        // Zehner-Schlünder 模型
-        const Pe_ax_ZS_inv = (1 - Math.sqrt(1 - epsilon)) / (Re * Sc) + 0.5;
-        const D_ax_ZS = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_ax_ZS_inv;
-        
-        // Gunn 模型
-        const tau = epsilon / Math.pow(1 - epsilon, 1/3);
-        const Pe_ax_Gunn_inv = (epsilon / (tau * Re * Sc)) + 0.5;
-        const Pe_ax_Gunn_term = 1 / Pe_ax_Gunn_inv;
-        const D_ax_Gunn = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / Pe_ax_Gunn_term;
-        
-        // Wakao-Kaguei 模型
-        const D_ax_WK = inputs_obj.molecularDiffusivity * epsilon + 0.5 * inputs_obj.fluidVelocity * inputs_obj.particleDiameter;
-
-        // Calculate radial dispersion coefficients
-        // Edwards-Richardson 径向模型
-        const D_rad_ER = inputs_obj.molecularDiffusivity * epsilon + 0.073 * inputs_obj.fluidVelocity * inputs_obj.particleDiameter / (1 + 9.7 * inputs_obj.molecularDiffusivity / (inputs_obj.fluidVelocity * inputs_obj.particleDiameter));
-        
-        // Zehner-Schlünder 径向模型
-        const N = inputs_obj.tubeRatio; // 管径比
-        const Pe_rad_ZS_inv = (epsilon / (9.5 * Re * Sc)) + (1 / 11);
-        const D_rad_ZS = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_ZS_inv;
-        
-        // Gunn 径向模型
-        const D_rad_Gunn = inputs_obj.molecularDiffusivity * epsilon * (1 + 0.11 * Math.pow(Re * Sc, 0.8)) / (1 + 10.5 * inputs_obj.molecularDiffusivity / (inputs_obj.fluidVelocity * inputs_obj.particleDiameter));
-        
-        // Wakao-Kaguei 径向模型
-        const Pe_rad_WK_inv = (0.7 * epsilon) / (Re * Sc) + 0.1;
-        const D_rad_WK = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_WK_inv;
-
-        // 计算Lerou-Wammes模型（替换了以前的ER径向模型）
-        const Pe_rad_Lerou = 8 / (1 + 20 / Math.pow(N, 2));
-        const D_rad_Lerou = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / Pe_rad_Lerou;
-        
-        // 计算Bauer模型
-        const Pe_rad_Bauer_inv = (0.73 * epsilon) / (Re * Sc) + 1 / (7 * Math.pow(2 - (1 - 2/N), 2));
-        const D_rad_Bauer = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_Bauer_inv;
-        
-        // Specchia模型
-        const Pe_rad_Specchia_inv = (epsilon / (10 * Re * Sc)) + (1 / 12);
-        const D_rad_Specchia = inputs_obj.fluidVelocity * inputs_obj.particleDiameter * Pe_rad_Specchia_inv;
-
-        // Calculate Peclet numbers
-        const Pe_ax_standard = 2.0; // 标准轴向佩克列数
-        const D_ax_standard = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / Pe_ax_standard;
-        
-        const Pe_ax_ER = 1 / Pe_ax_ER_inv;
-        const Pe_ax_ZS = 1 / Pe_ax_ZS_inv;
-        // Gunn 模型已经在前面计算为 Pe_ax_Gunn_term
-        const Pe_ax_WK = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / D_ax_WK;
-        
-        // 径向
-        const Pe_rad_ER = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / D_rad_ER;
-        const Pe_rad_ZS = 1 / Pe_rad_ZS_inv;
-        const Pe_rad_Gunn = inputs_obj.fluidVelocity * inputs_obj.particleDiameter / D_rad_Gunn;
-        const Pe_rad_WK = 1 / Pe_rad_WK_inv;
-        const Pe_rad_Bauer = 1 / Pe_rad_Bauer_inv;
-        const Pe_rad_Specchia = 1 / Pe_rad_Specchia_inv;
-
-        // Prepare results object
-        const results = {
-            // Axial dispersion coefficients
-            D_ax_ER,
-            D_ax_ZS,
-            D_ax_Gunn,
-            D_ax_WK,
-            
-            // Radial dispersion coefficients
-            D_rad_ER,
-            D_rad_ZS,
-            D_rad_Gunn,
-            D_rad_WK,
-            D_rad_Lerou,
-            D_rad_Bauer,
-            D_rad_Specchia,
-            
-            // Peclet numbers - axial
-            Pe_ax_ER,
-            Pe_ax_ZS,
-            Pe_ax_Gunn,
-            Pe_ax_WK,
-            
-            // Peclet numbers - radial
-            Pe_rad_ER,
-            Pe_rad_ZS,
-            Pe_rad_Gunn,
-            Pe_rad_WK,
-            Pe_rad_Lerou,
-            Pe_rad_Bauer,
-            Pe_rad_Specchia
-        };
-
-        // Display results in the UI
-        displayResults(inputs_obj, results);
-        
-        // Switch to results tab
-        document.querySelector('[data-tab="results"]').click();
     }
     
     // Display Results Function
     function displayResults(inputs, results) {
-        const resultsContent = document.querySelector('.results-content');
-        
-        // 格式化数字函数
-        function formatNumber(num) {
-            if (num === 0) return "0";
+        console.log('开始显示结果');
+        try {
+            const resultsContent = document.querySelector('.results-content');
+            if (!resultsContent) {
+                console.error('未找到结果容器元素 .results-content');
+                return;
+            }
+            console.log('输入参数:', inputs);
+            console.log('计算结果:', results);
             
-            // 科学计数法表示
-            if (Math.abs(num) < 0.001 || Math.abs(num) >= 10000) {
-                return num.toExponential(3);
+            // 格式化数字函数
+            function formatNumber(num) {
+                if (num === 0) return "0";
+                
+                // 科学计数法表示
+                if (Math.abs(num) < 0.001 || Math.abs(num) >= 10000) {
+                    return num.toExponential(3);
+                }
+                
+                // 小数位数动态调整
+                const absNum = Math.abs(num);
+                if (absNum < 0.01) return num.toFixed(5);
+                if (absNum < 0.1) return num.toFixed(4);
+                if (absNum < 1) return num.toFixed(3);
+                if (absNum < 10) return num.toFixed(2);
+                if (absNum < 100) return num.toFixed(1);
+                return num.toFixed(0);
             }
             
-            // 小数位数动态调整
-            const absNum = Math.abs(num);
-            if (absNum < 0.01) return num.toFixed(5);
-            if (absNum < 0.1) return num.toFixed(4);
-            if (absNum < 1) return num.toFixed(3);
-            if (absNum < 10) return num.toFixed(2);
-            if (absNum < 100) return num.toFixed(1);
-            return num.toFixed(0);
-        }
-        
-        // 查找最大和最小值
-        function findMinMax(obj, prefix) {
-            const values = Object.entries(obj)
-                .filter(([key]) => key.startsWith(prefix))
-                .map(([_, value]) => value);
-            return { 
-                min: Math.min(...values), 
-                max: Math.max(...values) 
+            // 查找最大和最小值
+            function findMinMax(obj, prefix) {
+                const values = Object.entries(obj)
+                    .filter(([key]) => key.startsWith(prefix))
+                    .map(([_, value]) => value);
+                return { 
+                    min: Math.min(...values), 
+                    max: Math.max(...values) 
+                };
+            }
+            
+            // 为轴向和径向反混系数找出最大最小值
+            // 轴向部分：只包含标准模型和三个轴向模型
+            const axialValues = [
+                inputs.fluidVelocity * inputs.particleDiameter / 2.0, // 标准模型
+                results.D_ax_ER,
+                results.D_ax_ZS,
+                results.D_ax_Gunn
+            ];
+            const axialMinMax = {
+                min: Math.min(...axialValues),
+                max: Math.max(...axialValues)
             };
+            
+            // 径向部分：只包含四个径向模型
+            const radialValues = [
+                results.D_rad_Lerou,
+                results.D_rad_Bauer,
+                results.D_rad_WK,
+                results.D_rad_Specchia
+            ];
+            const radialMinMax = {
+                min: Math.min(...radialValues),
+                max: Math.max(...radialValues)
+            };
+            
+            // 准备结果卡片数据
+            const Re = (inputs.fluidVelocity * inputs.particleDiameter * inputs.fluidDensity) / inputs.fluidViscosity;
+            const Sc = inputs.fluidViscosity / (inputs.fluidDensity * inputs.molecularDiffusivity);
+            const Pe_m = Re * Sc;
+            
+            // 构建结果HTML
+            let html = `
+            <div class="results-wrapper">
+                <!-- 操作条件卡片 -->
+                <div class="result-card condition-card">
+                    <div class="section-header">
+                        <span class="section-icon">🔬</span>
+                        操作条件
+                    </div>
+                    <table class="results-table">
+                        <tr>
+                            <th width="40%">参数</th>
+                            <th width="30%">数值</th>
+                            <th width="30%">单位</th>
+                        </tr>
+                        <tr>
+                            <td>流体表观速度 (<i>u</i><sub>0</sub>)</td>
+                            <td class="value-column">${formatNumber(inputs.fluidVelocity)}</td>
+                            <td>m/s</td>
+                        </tr>
+                        <tr>
+                            <td>颗粒直径 (<i>d</i><sub>p</sub>)</td>
+                            <td class="value-column">${formatNumber(inputs.particleDiameter)}</td>
+                            <td>m</td>
+                        </tr>
+                        <tr>
+                            <td>床层高度 (<i>H</i>)</td>
+                            <td class="value-column">${formatNumber(inputs.bedHeight)}</td>
+                            <td>m</td>
+                        </tr>
+                        <tr>
+                            <td>管径/颗粒直径比 (<i>N</i>)</td>
+                            <td class="value-column">${formatNumber(inputs.tubeRatio)}</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>床层空隙率 (<i>ε</i>)</td>
+                            <td class="value-column">${formatNumber(inputs.bedPorosity)}</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>流体密度 (<i>ρ</i>)</td>
+                            <td class="value-column">${formatNumber(inputs.fluidDensity)}</td>
+                            <td>kg/m³</td>
+                        </tr>
+                        <tr>
+                            <td>流体黏度 (<i>μ</i>)</td>
+                            <td class="value-column">${formatNumber(inputs.fluidViscosity)}</td>
+                            <td>Pa·s</td>
+                        </tr>
+                        <tr>
+                            <td>分子扩散系数 (<i>D</i><sub>m</sub>)</td>
+                            <td class="value-column">${formatNumber(inputs.molecularDiffusivity)}</td>
+                            <td>m²/s</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- 无量纲参数卡片 -->
+                <div class="result-card parameters-card">
+                    <div class="section-header">
+                        <span class="section-icon">📊</span>
+                        无量纲参数
+                    </div>
+                    <table class="results-table">
+                        <tr>
+                            <th width="25%">参数</th>
+                            <th width="25%">数值</th>
+                            <th width="50%">说明</th>
+                        </tr>
+                        <tr>
+                            <td>雷诺数 (<i>Re</i>)</td>
+                            <td class="value-column">${formatNumber(Re)}</td>
+                            <td>表征惯性力与黏性力的比值</td>
+                        </tr>
+                        <tr>
+                            <td>施密特数 (<i>Sc</i>)</td>
+                            <td class="value-column">${formatNumber(Sc)}</td>
+                            <td>表征动量扩散与物质扩散的比值</td>
+                        </tr>
+                        <tr>
+                            <td>分子佩克列数 (<i>Pe</i><sub>m</sub>)</td>
+                            <td class="value-column">${formatNumber(Pe_m)}</td>
+                            <td>表征对流传质与分子扩散的比值</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- 轴向反混系数卡片 -->
+                <div class="result-card pressure-card">
+                    <div class="section-header">
+                        <span class="section-icon">↕️</span>
+                        轴向反混系数 (<i>D</i><sub>ax</sub>)
+                    </div>
+                    <table class="results-table">
+                        <tr>
+                            <th width="40%">模型</th>
+                            <th width="30%">反混系数 (m²/s)</th>
+                            <th width="30%">佩克列数 (<i>Pe</i><sub>ax</sub>)</th>
+                        </tr>
+                        <tr ${inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.min ? 'class="min-value"' : inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                标准模型
+                                ${inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(inputs.fluidVelocity * inputs.particleDiameter / 2.0)}</td>
+                            <td class="value-column">2.00</td>
+                        </tr>
+                        <tr ${results.D_ax_ER === axialMinMax.min ? 'class="min-value"' : results.D_ax_ER === axialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Edwards-Richardson模型
+                                ${results.D_ax_ER === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_ax_ER === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_ax_ER)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_ax_ER)}</td>
+                        </tr>
+                        <tr ${results.D_ax_ZS === axialMinMax.min ? 'class="min-value"' : results.D_ax_ZS === axialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Zehner-Schlünder模型
+                                ${results.D_ax_ZS === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_ax_ZS === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_ax_ZS)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_ax_ZS)}</td>
+                        </tr>
+                        <tr ${results.D_ax_Gunn === axialMinMax.min ? 'class="min-value"' : results.D_ax_Gunn === axialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Gunn模型
+                                ${results.D_ax_Gunn === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_ax_Gunn === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_ax_Gunn)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_ax_Gunn)}</td>
+                        </tr>
+                    </table>
+                    
+                    <!-- 轴向图表 -->
+                    <div class="result-chart">
+                        <div class="chart-title">轴向反混系数对比图示</div>
+                        <div class="bar-chart">
+                            ${[
+                                {name: "标准模型", value: inputs.fluidVelocity * inputs.particleDiameter / 2.0},
+                                {name: "Edwards-Richardson模型", value: results.D_ax_ER},
+                                {name: "Zehner-Schlünder模型", value: results.D_ax_ZS},
+                                {name: "Gunn模型", value: results.D_ax_Gunn}
+                            ].map(result => {
+                                const percent = (result.value / axialMinMax.max * 100).toFixed(1);
+                                let barClass = "";
+                                if (result.value === axialMinMax.min) barClass = "min-bar";
+                                if (result.value === axialMinMax.max) barClass = "max-bar";
+                                
+                                return `
+                                <div class="chart-row">
+                                    <div class="chart-label">${result.name}</div>
+                                    <div class="chart-bar-container">
+                                        <div class="chart-bar ${barClass}" style="width: ${percent}%;">
+                                            <span class="bar-value">${formatNumber(result.value)}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 径向反混系数卡片 -->
+                <div class="result-card stats-card">
+                    <div class="section-header">
+                        <span class="section-icon">↔️</span>
+                        径向反混系数 (<i>D</i><sub>rad</sub>)
+                    </div>
+                    <table class="results-table">
+                        <tr>
+                            <th width="40%">模型</th>
+                            <th width="30%">反混系数 (m²/s)</th>
+                            <th width="30%">佩克列数 (<i>Pe</i><sub>rad</sub>)</th>
+                        </tr>
+                        <tr ${results.D_rad_Lerou === radialMinMax.min ? 'class="min-value"' : results.D_rad_Lerou === radialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Lerou-Wammes模型
+                                ${results.D_rad_Lerou === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_rad_Lerou === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_rad_Lerou)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_rad_Lerou)}</td>
+                        </tr>
+                        <tr ${results.D_rad_Bauer === radialMinMax.min ? 'class="min-value"' : results.D_rad_Bauer === radialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Bauer模型
+                                ${results.D_rad_Bauer === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_rad_Bauer === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_rad_Bauer)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_rad_Bauer)}</td>
+                        </tr>
+                        <tr ${results.D_rad_WK === radialMinMax.min ? 'class="min-value"' : results.D_rad_WK === radialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Wakao-Kaguei模型
+                                ${results.D_rad_WK === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_rad_WK === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_rad_WK)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_rad_WK)}</td>
+                        </tr>
+                        <tr ${results.D_rad_Specchia === radialMinMax.min ? 'class="min-value"' : results.D_rad_Specchia === radialMinMax.max ? 'class="max-value"' : ''}>
+                            <td class="equation-name">
+                                Specchia模型
+                                ${results.D_rad_Specchia === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
+                                ${results.D_rad_Specchia === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
+                            </td>
+                            <td class="value-column">${formatNumber(results.D_rad_Specchia)}</td>
+                            <td class="value-column">${formatNumber(results.Pe_rad_Specchia)}</td>
+                        </tr>
+                    </table>
+                    
+                    <!-- 径向图表 -->
+                    <div class="result-chart">
+                        <div class="chart-title">径向反混系数对比图示</div>
+                        <div class="bar-chart">
+                            ${[
+                                {name: "Lerou-Wammes模型", value: results.D_rad_Lerou},
+                                {name: "Bauer模型", value: results.D_rad_Bauer},
+                                {name: "Wakao-Kaguei模型", value: results.D_rad_WK},
+                                {name: "Specchia模型", value: results.D_rad_Specchia}
+                            ].map(result => {
+                                const percent = (result.value / radialMinMax.max * 100).toFixed(1);
+                                let barClass = "";
+                                if (result.value === radialMinMax.min) barClass = "min-bar";
+                                if (result.value === radialMinMax.max) barClass = "max-bar";
+                                
+                                return `
+                                <div class="chart-row">
+                                    <div class="chart-label">${result.name}</div>
+                                    <div class="chart-bar-container">
+                                        <div class="chart-bar ${barClass}" style="width: ${percent}%;">
+                                            <span class="bar-value">${formatNumber(result.value)}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="completion-message">✅ 计算完成！✨</div>`;
+            
+            resultsContent.innerHTML = html;
+        } catch (error) {
+            console.error('显示结果时发生错误:', error);
+            alert('显示结果时发生错误: ' + error.message);
         }
-        
-        // 为轴向和径向反混系数找出最大最小值
-        // 轴向部分：只包含标准模型和三个轴向模型
-        const axialValues = [
-            inputs.fluidVelocity * inputs.particleDiameter / 2.0, // 标准模型
-            results.D_ax_ER,
-            results.D_ax_ZS,
-            results.D_ax_Gunn
-        ];
-        const axialMinMax = {
-            min: Math.min(...axialValues),
-            max: Math.max(...axialValues)
-        };
-        
-        // 径向部分：只包含四个径向模型
-        const radialValues = [
-            results.D_rad_Lerou,
-            results.D_rad_Bauer,
-            results.D_rad_WK,
-            results.D_rad_Specchia
-        ];
-        const radialMinMax = {
-            min: Math.min(...radialValues),
-            max: Math.max(...radialValues)
-        };
-        
-        // 准备结果卡片数据
-        const Re = (inputs.fluidVelocity * inputs.particleDiameter * inputs.fluidDensity) / inputs.fluidViscosity;
-        const Sc = inputs.fluidViscosity / (inputs.fluidDensity * inputs.molecularDiffusivity);
-        const Pe_m = Re * Sc;
-        
-        // 构建结果HTML
-        let html = `
-        <div class="results-wrapper">
-            <!-- 操作条件卡片 -->
-            <div class="result-card condition-card">
-                <div class="section-header">
-                    <span class="section-icon">🔬</span>
-                    操作条件
-                </div>
-                <table class="results-table">
-                    <tr>
-                        <th width="40%">参数</th>
-                        <th width="30%">数值</th>
-                        <th width="30%">单位</th>
-                    </tr>
-                    <tr>
-                        <td>流体表观速度 (<i>u</i><sub>0</sub>)</td>
-                        <td class="value-column">${formatNumber(inputs.fluidVelocity)}</td>
-                        <td>m/s</td>
-                    </tr>
-                    <tr>
-                        <td>颗粒直径 (<i>d</i><sub>p</sub>)</td>
-                        <td class="value-column">${formatNumber(inputs.particleDiameter)}</td>
-                        <td>m</td>
-                    </tr>
-                    <tr>
-                        <td>床层高度 (<i>H</i>)</td>
-                        <td class="value-column">${formatNumber(inputs.bedHeight)}</td>
-                        <td>m</td>
-                    </tr>
-                    <tr>
-                        <td>管径/颗粒直径比 (<i>N</i>)</td>
-                        <td class="value-column">${formatNumber(inputs.tubeRatio)}</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>床层空隙率 (<i>ε</i>)</td>
-                        <td class="value-column">${formatNumber(inputs.bedPorosity)}</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>流体密度 (<i>ρ</i>)</td>
-                        <td class="value-column">${formatNumber(inputs.fluidDensity)}</td>
-                        <td>kg/m³</td>
-                    </tr>
-                    <tr>
-                        <td>流体黏度 (<i>μ</i>)</td>
-                        <td class="value-column">${formatNumber(inputs.fluidViscosity)}</td>
-                        <td>Pa·s</td>
-                    </tr>
-                    <tr>
-                        <td>分子扩散系数 (<i>D</i><sub>m</sub>)</td>
-                        <td class="value-column">${formatNumber(inputs.molecularDiffusivity)}</td>
-                        <td>m²/s</td>
-                    </tr>
-                </table>
-            </div>
-            
-            <!-- 无量纲参数卡片 -->
-            <div class="result-card parameters-card">
-                <div class="section-header">
-                    <span class="section-icon">📊</span>
-                    无量纲参数
-                </div>
-                <table class="results-table">
-                    <tr>
-                        <th width="25%">参数</th>
-                        <th width="25%">数值</th>
-                        <th width="50%">说明</th>
-                    </tr>
-                    <tr>
-                        <td>雷诺数 (<i>Re</i>)</td>
-                        <td class="value-column">${formatNumber(Re)}</td>
-                        <td>表征惯性力与黏性力的比值</td>
-                    </tr>
-                    <tr>
-                        <td>施密特数 (<i>Sc</i>)</td>
-                        <td class="value-column">${formatNumber(Sc)}</td>
-                        <td>表征动量扩散与物质扩散的比值</td>
-                    </tr>
-                    <tr>
-                        <td>分子佩克列数 (<i>Pe</i><sub>m</sub>)</td>
-                        <td class="value-column">${formatNumber(Pe_m)}</td>
-                        <td>表征对流传质与分子扩散的比值</td>
-                    </tr>
-                </table>
-            </div>
-            
-            <!-- 轴向反混系数卡片 -->
-            <div class="result-card pressure-card">
-                <div class="section-header">
-                    <span class="section-icon">↕️</span>
-                    轴向反混系数 (<i>D</i><sub>ax</sub>)
-                </div>
-                <table class="results-table">
-                    <tr>
-                        <th width="40%">模型</th>
-                        <th width="30%">反混系数 (m²/s)</th>
-                        <th width="30%">佩克列数 (<i>Pe</i><sub>ax</sub>)</th>
-                    </tr>
-                    <tr ${inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.min ? 'class="min-value"' : inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            标准模型
-                            ${inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${inputs.fluidVelocity * inputs.particleDiameter / 2.0 === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(inputs.fluidVelocity * inputs.particleDiameter / 2.0)}</td>
-                        <td class="value-column">2.00</td>
-                    </tr>
-                    <tr ${results.D_ax_ER === axialMinMax.min ? 'class="min-value"' : results.D_ax_ER === axialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Edwards-Richardson模型
-                            ${results.D_ax_ER === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_ax_ER === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_ax_ER)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_ax_ER)}</td>
-                    </tr>
-                    <tr ${results.D_ax_ZS === axialMinMax.min ? 'class="min-value"' : results.D_ax_ZS === axialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Zehner-Schlünder模型
-                            ${results.D_ax_ZS === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_ax_ZS === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_ax_ZS)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_ax_ZS)}</td>
-                    </tr>
-                    <tr ${results.D_ax_Gunn === axialMinMax.min ? 'class="min-value"' : results.D_ax_Gunn === axialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Gunn模型
-                            ${results.D_ax_Gunn === axialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_ax_Gunn === axialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_ax_Gunn)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_ax_Gunn)}</td>
-                    </tr>
-                </table>
-                
-                <!-- 轴向图表 -->
-                <div class="result-chart">
-                    <div class="chart-title">轴向反混系数对比图示</div>
-                    <div class="bar-chart">
-                        ${[
-                            {name: "标准模型", value: inputs.fluidVelocity * inputs.particleDiameter / 2.0},
-                            {name: "Edwards-Richardson模型", value: results.D_ax_ER},
-                            {name: "Zehner-Schlünder模型", value: results.D_ax_ZS},
-                            {name: "Gunn模型", value: results.D_ax_Gunn}
-                        ].map(result => {
-                            const percent = (result.value / axialMinMax.max * 100).toFixed(1);
-                            let barClass = "";
-                            if (result.value === axialMinMax.min) barClass = "min-bar";
-                            if (result.value === axialMinMax.max) barClass = "max-bar";
-                            
-                            return `
-                            <div class="chart-row">
-                                <div class="chart-label">${result.name}</div>
-                                <div class="chart-bar-container">
-                                    <div class="chart-bar ${barClass}" style="width: ${percent}%;">
-                                        <span class="bar-value">${formatNumber(result.value)}</span>
-                                    </div>
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 径向反混系数卡片 -->
-            <div class="result-card stats-card">
-                <div class="section-header">
-                    <span class="section-icon">↔️</span>
-                    径向反混系数 (<i>D</i><sub>rad</sub>)
-                </div>
-                <table class="results-table">
-                    <tr>
-                        <th width="40%">模型</th>
-                        <th width="30%">反混系数 (m²/s)</th>
-                        <th width="30%">佩克列数 (<i>Pe</i><sub>rad</sub>)</th>
-                    </tr>
-                    <tr ${results.D_rad_Lerou === radialMinMax.min ? 'class="min-value"' : results.D_rad_Lerou === radialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Lerou-Wammes模型
-                            ${results.D_rad_Lerou === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_rad_Lerou === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_rad_Lerou)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_rad_Lerou)}</td>
-                    </tr>
-                    <tr ${results.D_rad_Bauer === radialMinMax.min ? 'class="min-value"' : results.D_rad_Bauer === radialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Bauer模型
-                            ${results.D_rad_Bauer === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_rad_Bauer === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_rad_Bauer)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_rad_Bauer)}</td>
-                    </tr>
-                    <tr ${results.D_rad_WK === radialMinMax.min ? 'class="min-value"' : results.D_rad_WK === radialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Wakao-Kaguei模型
-                            ${results.D_rad_WK === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_rad_WK === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_rad_WK)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_rad_WK)}</td>
-                    </tr>
-                    <tr ${results.D_rad_Specchia === radialMinMax.min ? 'class="min-value"' : results.D_rad_Specchia === radialMinMax.max ? 'class="max-value"' : ''}>
-                        <td class="equation-name">
-                            Specchia模型
-                            ${results.D_rad_Specchia === radialMinMax.min ? '<span class="result-badge min-badge">最小值</span>' : ''}
-                            ${results.D_rad_Specchia === radialMinMax.max ? '<span class="result-badge max-badge">最大值</span>' : ''}
-                        </td>
-                        <td class="value-column">${formatNumber(results.D_rad_Specchia)}</td>
-                        <td class="value-column">${formatNumber(results.Pe_rad_Specchia)}</td>
-                    </tr>
-                </table>
-                
-                <!-- 径向图表 -->
-                <div class="result-chart">
-                    <div class="chart-title">径向反混系数对比图示</div>
-                    <div class="bar-chart">
-                        ${[
-                            {name: "Lerou-Wammes模型", value: results.D_rad_Lerou},
-                            {name: "Bauer模型", value: results.D_rad_Bauer},
-                            {name: "Wakao-Kaguei模型", value: results.D_rad_WK},
-                            {name: "Specchia模型", value: results.D_rad_Specchia}
-                        ].map(result => {
-                            const percent = (result.value / radialMinMax.max * 100).toFixed(1);
-                            let barClass = "";
-                            if (result.value === radialMinMax.min) barClass = "min-bar";
-                            if (result.value === radialMinMax.max) barClass = "max-bar";
-                            
-                            return `
-                            <div class="chart-row">
-                                <div class="chart-label">${result.name}</div>
-                                <div class="chart-bar-container">
-                                    <div class="chart-bar ${barClass}" style="width: ${percent}%;">
-                                        <span class="bar-value">${formatNumber(result.value)}</span>
-                                    </div>
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="completion-message">✅ 计算完成！✨</div>`;
-        
-        resultsContent.innerHTML = html;
     }
 
     // Modal Functionality
@@ -827,10 +858,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event Listeners
     
-    // Also add event listener to the new button
-    document.getElementById('calculate-button').addEventListener('click', calculate);
-    document.getElementById('clear-button').addEventListener('click', clearValues);
-    document.getElementById('reset-button').addEventListener('click', resetValues);
+    // 事件监听器已经在DOMContentLoaded中添加，这里注释掉防止重复
+    // document.getElementById('calculate-button').addEventListener('click', calculate);
+    // document.getElementById('clear-button').addEventListener('click', clearValues);
+    // document.getElementById('reset-button').addEventListener('click', resetValues);
 
     modalClose.addEventListener('click', () => modal.style.display = 'none');
     window.addEventListener('click', (e) => {
@@ -1427,4 +1458,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Event Listeners - 确保在这里直接设置事件监听器
+    try {
+        const calculateButton = document.getElementById('calculate-button');
+        if (calculateButton) {
+            console.log('找到计算按钮，添加事件监听器');
+            calculateButton.addEventListener('click', function(e) {
+                console.log('计算按钮被点击');
+                try {
+                    calculate();
+                } catch (error) {
+                    console.error('计算过程中发生错误:', error);
+                    alert('计算过程中发生错误: ' + error.message);
+                }
+            });
+        } else {
+            console.error('未找到计算按钮元素');
+        }
+        
+        const clearButton = document.getElementById('clear-button');
+        if (clearButton) {
+            clearButton.addEventListener('click', clearValues);
+        }
+        
+        const resetButton = document.getElementById('reset-button');
+        if (resetButton) {
+            resetButton.addEventListener('click', resetValues);
+        }
+    } catch (error) {
+        console.error('设置事件监听器时发生错误:', error);
+    }
 });

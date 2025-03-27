@@ -45,6 +45,44 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* 修复公式显示问题，移除滚动条 */
+        .formula-math {
+            overflow-x: visible !important;
+            white-space: nowrap;
+            max-width: none !important;
+        }
+        
+        .latex-formula {
+            white-space: nowrap;
+            overflow: visible;
+            max-width: 100%;
+            margin: 10px 0;
+        }
+        
+        /* 完全移除所有公式相关元素的滚动条 */
+        .formula {
+            overflow: visible !important;
+            max-width: none !important;
+            white-space: nowrap;
+        }
+        
+        /* 确保MathJax元素不显示滚动条 */
+        .MathJax_Display, .MathJax, .mjx-chtml {
+            overflow-x: visible !important;
+            overflow-y: visible !important;
+            max-width: none !important;
+        }
+        
+        /* 公式详情容器不显示滚动条，除了垂直方向 */
+        .formula-detail, .formula-legend {
+            overflow: visible !important;
+        }
+        
+        /* 模态框内容不显示滚动条，除了垂直方向 */
+        .modal-content {
+            overflow-x: visible !important;
+        }
     </style>
     <script>
         // Loading indicator management
@@ -118,6 +156,10 @@
                                 <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
                                 <input type="number" id="fluid_velocity" value="1" step="0.01" required>
                             </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="系统温度，影响辐射传热">🔹 温度 (K):</label>
+                                <input type="number" id="temperature" value="300" step="1" required>
+                            </div>
                         </div>
                         <div class="input-column">
                             <div class="input-group">
@@ -135,6 +177,14 @@
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (J/kg·K):</label>
                                 <input type="number" id="fluid_heat_capacity" value="1005" step="1" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="系统压力，影响自由程计算">🔹 压力 (Pa):</label>
+                                <input type="number" id="pressure" value="101325" step="100" required>
+                            </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="气体的摩尔质量，例如：空气约为0.029">🔹 气体摩尔质量 (kg/mol):</label>
+                                <input type="number" id="molar_mass" value="0.029" step="0.001" required>
                             </div>
                         </div>
                     </div>
@@ -154,6 +204,11 @@
                                 <input type="checkbox" id="zbs_static" checked>
                                 <span>📊 ZBS静态导热</span>
                                 <a href="#" class="info-link correlation-info" data-correlation="zbs_static">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="correlation-item">
+                                <input type="checkbox" id="zbs_static_radiation" checked>
+                                <span>📊 ZBS静态导热（辐射）</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="zbs_static_radiation">ℹ️ 查看公式</a>
                             </label>
                         </div>
 

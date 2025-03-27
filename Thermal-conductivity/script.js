@@ -1,6 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded event fired');
 
+    // 添加错误值的CSS样式
+    const errorStyle = document.createElement('style');
+    errorStyle.textContent = `
+        .error-value {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .error-value .value-number {
+            text-decoration: underline wavy #e74c3c;
+        }
+    `;
+    document.head.appendChild(errorStyle);
+
     // Loading indicator
     const loadingOverlay = document.getElementById('loading-overlay');
     const modal = document.getElementById('formulaModal');
@@ -117,22 +130,23 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         zbs_static: {
             title: "ZBS(Zehner-Bauer-Schlünder)静态导热系数关联式",
-            formula: "$$ k_0 = k_g \\left[ 1 - \\sqrt{1-\\epsilon} + \\sqrt{1-\\epsilon} \\cdot \\frac{2}{1-B/A} \\left( \\frac{(1-B/A)^{-1} \\ln(A/B) - 1}{(B/A)^2} \\right) \\right] $$",
+            formula: "$$ \\lambda_{bed}^0 = \\lambda_f \\left[ 1 - \\sqrt{1-\\epsilon} + \\sqrt{1-\\epsilon} \\cdot \\frac{2}{1-B/\\kappa} \\left( \\frac{(1-1/\\kappa) \\cdot B \\cdot \\ln(\\kappa/B)}{(1-B/\\kappa)^2} - \\frac{B-1}{1-B/\\kappa} - \\frac{B+1}{2} \\right) \\right] $$",
             parameters: [
-                ["k_0", "静态有效导热系数", "固定床在无流动状态下的导热系数"],
-                ["k_g", "气体导热系数", "床层中流体的导热系数"],
+                ["\\lambda_{bed}^0", "静态有效导热系数", "固定床在无流动状态下的导热系数"],
+                ["\\lambda_f", "流体导热系数", "床层中流体的导热系数"],
+                ["\\lambda_s", "固体导热系数", "颗粒的导热系数"],
                 ["\\epsilon", "空隙率", "床层的孔隙度"],
-                ["A", "形状因子", "与颗粒形状和排列有关"],
-                ["B", "导热比", "固体与流体导热系数的比值 (k_s/k_g)"]
+                ["\\kappa", "导热比", "固体与流体导热系数的比值 (λ_s/λ_f)"],
+                ["B", "形状因子", "与颗粒形状有关的参数，球形颗粒通常取1.25"]
             ],
             theory: `<p><strong>ZBS模型</strong>是一种较为复杂但精确的静态导热模型，考虑了颗粒形状、接触点传热以及空隙率分布的影响。</p>
             <p>关键特点：</p>
             <ul>
                 <li>将颗粒之间的空间分为串联和并联热传导单元</li>
-                <li>考虑了颗粒形状对热传导的影响</li>
-                <li>能处理较大导热系数比(k_s/k_g)的情况</li>
+                <li>考虑了颗粒形状对热传导的影响（通过形状因子B表示）</li>
+                <li>能处理较大导热系数比(λ_s/λ_f)的情况</li>
             </ul>
-            <p>这个模型虽然计算复杂，但在精确预测固定床导热性能方面表现优异。</p>`,
+            <p>这个模型在精确预测固定床导热性能方面表现优异，特别是对于球形颗粒填充床。</p>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -140,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">适合较大导热系数比(k_s/k_g)的情况</span>
+        <span class="condition-text">适合较大导热系数比(λ_s/λ_f)的情况</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -148,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">考虑了空隙率分布的影响</span>
+        <span class="condition-text">形状因子B对于球形颗粒通常取1.25</span>
     </div>
 </div>`
         },
@@ -372,6 +386,57 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="condition-item">
         <span class="condition-icon">✓</span>
         <span class="condition-text">Pe_r参数可根据具体情况调整(通常取8-12)</span>
+    </div>
+</div>`
+        },
+        zbs_static_radiation: {
+            title: "ZBS (Zehner-Bauer-Schlünder) 静态导热系数模型（含辐射）",
+            formula: `
+                <div class="formula">
+                    <div class="latex-formula">
+                        $$ k_{eff,f} = k_f[(1-\\sqrt{1-\\varepsilon})\\varepsilon((\\varepsilon-1+1/k_G)^{-1}+k_r) + \\sqrt{1-\\varepsilon}(\\phi k_{s/f}+(1-\\phi)k_c)] $$
+                    </div>
+                    <div class="latex-formula">
+                        $$ k_r = \\frac{4\\sigma T^3d_p}{(2/\\varepsilon_r-1)k_f} $$
+                    </div>
+                </div>
+            `,
+            parameters: [
+                ["k_f", "流体导热系数", "床层中流体的导热系数"],
+                ["k_{s/f}", "固体流体导热系数比值", "固体与流体导热系数的比值"],
+                ["ε", "床层孔隙率", "床层的孔隙度"],
+                ["k_r", "辐射参数", "通常在高温下考虑，低温可忽略"],
+                ["k_G", "Knudsen参数", "气体分子平均自由程与颗粒直径的比值"],
+                ["k_c", "综合热导参数", "综合考虑了流体导热、固体导热和辐射传热的参数"],
+                ["φ", "形状因子", "球形颗粒约为0.0077"],
+                ["σ", "Stefan-Boltzmann常数", "W/(m²·K⁴)"],
+                ["T", "温度", "K"],
+                ["d_p", "颗粒直径", "m"],
+                ["ε_r", "辐射发射率", "通常在高温下考虑，低温可忽略"]
+            ],
+            theory: `<p><strong>ZBS辐射模型</strong>考虑了辐射传热的影响。模型基于Zehner, Bauer和Schlünder的工作，增加了辐射热传递项，使其特别适用于高温环境下的热传导计算，如催化剂床层或高温反应器。</p>
+            <p>关键特点：</p>
+            <ul>
+                <li>考虑了辐射传热的影响</li>
+                <li>综合考虑了流体导热、固体导热和辐射传热的贡献</li>
+                <li>适用于高温环境下的热传导计算</li>
+            </ul>`,
+            applicability: `<div class="applicability-conditions">
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">适用于高温环境下的热传导计算</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">特别适合催化剂床层或高温反应器</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">适用于气固和液固系统</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">低温可忽略辐射导热部分</span>
     </div>
 </div>`
         }
@@ -657,7 +722,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 fluidThermalConductivity: getInputValue('fluid_thermal_conductivity'),
                 fluidDensity: getInputValue('fluid_density'),
                 fluidViscosity: getInputValue('fluid_viscosity', true),
-                fluidHeatCapacity: getInputValue('fluid_heat_capacity')
+                fluidHeatCapacity: getInputValue('fluid_heat_capacity'),
+                temperature: getInputValue('temperature'),
+                pressure: getInputValue('pressure'),
+                molarMass: getInputValue('molar_mass')
             };
             
             // 验证输入
@@ -680,6 +748,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (document.getElementById('zbs_static').checked) {
                 selectedCorrelations.static.push('zbs_static');
+            }
+            
+            // 检查ZBS静态导热（辐射）选项
+            if (document.getElementById('zbs_static_radiation').checked) {
+                selectedCorrelations.static.push('zbs_static_radiation');
             }
             
             // 轴向弥散
@@ -778,25 +851,122 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (correlations.includes('zbs_static')) {
-            // ZBS 静态导热
+            // ZBS 静态导热 - 使用改进的函数逻辑
             const { voidFraction, fluidThermalConductivity, solidThermalConductivity } = inputs;
-            const B = solidThermalConductivity / fluidThermalConductivity;
-            const A = 10; // 典型形状因子
             
-            // 简化后的ZBS公式
-            const term1 = 1 - Math.sqrt(1 - voidFraction);
-            const term2 = Math.sqrt(1 - voidFraction);
-            const term3 = 2 / (1 - B / A);
-            const term4 = ((1 / (1 - B / A)) * Math.log(A / B) - 1) / Math.pow(B / A, 2);
-            const k0_zbs = fluidThermalConductivity * (term1 + term2 * term3 * term4);
+            // 使用与Python函数相同的逻辑实现ZBS公式
+            const B = 1.25; // 球形颗粒的形状因子，默认为1.25
+            const kappa = solidThermalConductivity / fluidThermalConductivity;
+            const sqrt_1_minus_epsilon = Math.sqrt(1 - voidFraction);
             
-            results['zbs_static'] = k0_zbs.toFixed(4);
+            // 检查潜在的除零或对数域错误
+            const term_1_minus_B_div_kappa = 1.0 - B / kappa;
+            
+            if (Math.abs(term_1_minus_B_div_kappa) < 1e-9) {
+                console.warn(`警告: kappa (${kappa.toFixed(4)}) 非常接近 B (${B.toFixed(4)}). 结果可能不稳定或无效。`);
+                results['zbs_static'] = "计算错误";
+            } else if (kappa / B <= 0) {
+                console.error(`错误: kappa/B (${(kappa/B).toFixed(4)}) 必须为正数才能计算对数。`);
+                results['zbs_static'] = "计算错误";
+            } else {
+                try {
+                    const log_kappa_div_B = Math.log(kappa / B);
+                    
+                    // 计算复杂项（term2_factor）
+                    const termA = ((1.0 - 1.0 / kappa) * B / (term_1_minus_B_div_kappa**2)) * log_kappa_div_B;
+                    const termB = (B - 1.0) / term_1_minus_B_div_kappa;
+                    const termC = (B + 1.0) / 2.0;
+                    const term2_factor = (2.0 / term_1_minus_B_div_kappa) * (termA - termB - termC);
+                    
+                    // 结合各项计算比值 lambda_bed^0 / lambda_f
+                    const lambda_ratio = (1.0 - sqrt_1_minus_epsilon) + sqrt_1_minus_epsilon * term2_factor;
+                    const k0_zbs = fluidThermalConductivity * lambda_ratio;
+                    
+                    results['zbs_static'] = k0_zbs.toFixed(4);
+                } catch (error) {
+                    console.error(`计算期间出现数学错误: ${error.message}`);
+                    results['zbs_static'] = "计算错误";
+                }
+            }
         }
         
-        // 计算平均值
-        if (Object.keys(results).length > 0) {
-            const sum = Object.values(results).reduce((acc, val) => acc + parseFloat(val), 0);
-            results['average'] = (sum / Object.keys(results).length).toFixed(4);
+        if (correlations.includes('zbs_static_radiation')) {
+            // ZBS静态导热（辐射）- 参考Python代码中的ZBS模型，包含辐射传热
+            const { 
+                voidFraction, 
+                fluidThermalConductivity, 
+                solidThermalConductivity, 
+                particleDiameter,
+                fluidDensity,
+                fluidViscosity,
+                fluidHeatCapacity,
+                temperature,
+                pressure,
+                molarMass
+            } = inputs;
+            
+            // 计算气体分子平均自由程所需参数
+            const R = 8.314; // 气体常数 J/(mol·K)
+            const sigma = 5.67e-8; // Stefan-Boltzmann常数 W/(m^2·K^4)
+            const emissivity = 0.8; // 辐射发射率，可以添加额外输入字段
+            
+            try {
+                // 计算固体与流体热导率的比值
+                const kappa = solidThermalConductivity / fluidThermalConductivity;
+                
+                // 变形参数B
+                const B = 1.25 * Math.pow((1 - voidFraction) / voidFraction, 10/9);
+                
+                // 辐射参数
+                const k_r = (4 * sigma * Math.pow(temperature, 3) * particleDiameter) / (2 / emissivity - 1) / fluidThermalConductivity;
+                
+                // 修正自由程计算
+                const a_T = 1; // 热适应系数
+                const l = 2 * (2 - a_T) / a_T * 
+                      Math.sqrt(2 * Math.PI * R * temperature / molarMass) * 
+                      fluidThermalConductivity / 
+                      (pressure * (2 * fluidHeatCapacity - R / molarMass));
+                
+                // Knudsen参数
+                const k_G = 1 / (1 + l / particleDiameter);
+                
+                // 计算N参数
+                const N = 1 / k_G * (1 + (k_r - B * k_G) / kappa) - B * (1 / k_G - 1) * (1 + k_r / kappa);
+                
+                // 计算k_c参数
+                const k_c_term1 = 2 / N * (B * (kappa + k_r - 1) / (N**2 * k_G * kappa) * 
+                                 Math.log((kappa + k_r) / (B * (k_G + (1 - k_G) * (kappa + k_r)))));
+                const k_c_term2 = 2 / N * (B + 1) / (2 * B) * (k_r / k_G - B * (1 + (1 - k_G) / k_G * k_r));
+                const k_c_term3 = -2 / N * (B - 1) / (N * k_G);
+                const k_c = k_c_term1 + k_c_term2 + k_c_term3;
+                
+                // 形状因子
+                const phi = 0.0077;
+                
+                // 计算有效热导率
+                const k_eff_ratio = (1 - Math.sqrt(1 - voidFraction)) * voidFraction * 
+                                   ((voidFraction - 1 + 1 / k_G) ** (-1) + k_r) + 
+                                   Math.sqrt(1 - voidFraction) * (phi * kappa + (1 - phi) * k_c);
+                
+                const k0_zbs_rad = fluidThermalConductivity * k_eff_ratio;
+                
+                results['zbs_static_radiation'] = k0_zbs_rad.toFixed(4);
+            } catch (error) {
+                console.error(`ZBS辐射模型计算期间出现数学错误: ${error.message}`);
+                results['zbs_static_radiation'] = "计算错误";
+            }
+        }
+        
+        // 计算平均值（只对有效数值计算平均值）
+        const validResults = Object.entries(results)
+            .filter(([_, value]) => !isNaN(parseFloat(value)) && value !== "计算错误")
+            .map(([_, value]) => parseFloat(value));
+        
+        if (validResults.length > 0) {
+            const sum = validResults.reduce((acc, val) => acc + val, 0);
+            results['average'] = (sum / validResults.length).toFixed(4);
+        } else if (Object.keys(results).length > 0) {
+            results['average'] = "无有效结果";
         }
         
         return results;
@@ -807,7 +977,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const results = {};
         const { voidFraction, fluidThermalConductivity } = inputs;
         const Pe = Re * Pr;
-        const staticResults = calculateStaticConductivity(inputs, ['yagi_kunii_static', 'zbs_static']);
+        
+        // 在计算静态导热系数时也考虑ZBS静态导热（辐射）模型
+        const staticModels = ['yagi_kunii_static', 'zbs_static'];
+        if (document.getElementById('zbs_static_radiation').checked) {
+            staticModels.push('zbs_static_radiation');
+        }
+        const staticResults = calculateStaticConductivity(inputs, staticModels);
         const k0 = parseFloat(staticResults['average']);
         
         if (correlations.includes('yagi_kunii_dispersion_axial')) {
@@ -842,7 +1018,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const results = {};
         const { fluidThermalConductivity } = inputs;
         const Pe = Re * Pr;
-        const staticResults = calculateStaticConductivity(inputs, ['yagi_kunii_static', 'zbs_static']);
+        
+        // 在计算静态导热系数时也考虑ZBS静态导热（辐射）模型
+        const staticModels = ['yagi_kunii_static', 'zbs_static'];
+        if (document.getElementById('zbs_static_radiation').checked) {
+            staticModels.push('zbs_static_radiation');
+        }
+        const staticResults = calculateStaticConductivity(inputs, staticModels);
         const k0 = parseFloat(staticResults['average']);
         
         if (correlations.includes('yagi_kunii_dispersion_radial')) {
@@ -891,7 +1073,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fluidThermalConductivity: getInputValue('fluid_thermal_conductivity'),
             fluidDensity: getInputValue('fluid_density'),
             fluidViscosity: getInputValue('fluid_viscosity', true),
-            fluidHeatCapacity: getInputValue('fluid_heat_capacity')
+            fluidHeatCapacity: getInputValue('fluid_heat_capacity'),
+            temperature: getInputValue('temperature'),
+            pressure: getInputValue('pressure'),
+            molarMass: getInputValue('molar_mass')
         };
         
         // 构建结果HTML
@@ -975,6 +1160,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </td>
                     </tr>
+                    <tr>
+                        <td>温度</td>
+                        <td class="value-column">
+                            <div class="value-with-unit">
+                                <span class="value-number">${formatNumber(inputs.temperature)}</span>
+                                <span class="value-unit">K</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>压力</td>
+                        <td class="value-column">
+                            <div class="value-with-unit">
+                                <span class="value-number">${formatNumber(inputs.pressure)}</span>
+                                <span class="value-unit">Pa</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>气体摩尔质量</td>
+                        <td class="value-column">
+                            <div class="value-with-unit">
+                                <span class="value-number">${formatNumber(inputs.molarMass)}</span>
+                                <span class="value-unit">kg/mol</span>
+                            </div>
+                        </td>
+                    </tr>
                 </table>
             </div>
 
@@ -1029,10 +1241,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 获取静态导热系数的最大值和最小值
         const staticValues = Object.entries(results.static)
-            .filter(([key]) => key !== 'average')
+            .filter(([key, value]) => key !== 'average' && value !== "计算错误" && value !== "无有效结果")
             .map(([_, value]) => parseFloat(value));
-        const staticMinValue = Math.min(...staticValues);
-        const staticMaxValue = Math.max(...staticValues);
+        const staticMinValue = staticValues.length > 0 ? Math.min(...staticValues) : 0;
+        const staticMaxValue = staticValues.length > 0 ? Math.max(...staticValues) : 0;
         
         // 添加静态导热系数结果
         Object.entries(results.static).forEach(([key, value]) => {
@@ -1043,15 +1255,37 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td class="value-column">
                             <div class="value-with-unit">
                                 <span class="value-number"><strong>${value}</strong></span>
-                                <span class="value-unit">W/m·K</span>
+                                <span class="value-unit">${value === "无有效结果" ? "" : "W/m·K"}</span>
                             </div>
                         </td>
                     </tr>
                 `;
             } else {
-                const correlationName = key === 'yagi_kunii_static' ? 'Yagi-Kunii静态导热' : 'ZBS静态导热';
+                const correlationName = key === 'yagi_kunii_static' ? 'Yagi-Kunii静态导热' : 
+                                           (key === 'zbs_static' ? 'ZBS静态导热' : 
+                                           (key === 'zbs_static_radiation' ? 'ZBS静态导热（辐射）' : key));
                 let indication = '';
                 let badgeClass = '';
+                
+                // 检查是否为错误结果
+                if (value === "计算错误" || value === "无有效结果") {
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="equation-name">
+                                    ${correlationName}
+                                    <a href="#" class="info-link correlation-info" data-correlation="${key}" title="查看公式">ℹ️</a>
+                                </div>
+                            </td>
+                            <td class="value-column">
+                                <div class="value-with-unit error-value">
+                                    <span class="value-number">${value}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return; // 跳过后续处理
+                }
                 
                 if (staticValues.length > 1) {
                     if (parseFloat(value) === staticMinValue) {
@@ -1492,6 +1726,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 description = "Zehner, Bauer和Schlünder提出的静态导热系数模型，通过考虑颗粒接触点和流体路径改进了传热模拟。该模型对于高导热比(k_p/k_g)的系统非常适用。";
+                break;
+                
+            case 'zbs_static_radiation':
+                title = "ZBS (Zehner-Bauer-Schlünder) 静态导热系数模型（含辐射）";
+                formulaHtml = `
+                    <div class="formula">
+                        <div class="latex-formula">
+                            $$ k_{eff,f} = k_f[(1-\\sqrt{1-\\varepsilon})\\varepsilon((\\varepsilon-1+1/k_G)^{-1}+k_r) + \\sqrt{1-\\varepsilon}(\\phi k_{s/f}+(1-\\phi)k_c)] $$
+                        </div>
+                        <div class="latex-formula">
+                            $$ k_r = \\frac{4\\sigma T^3d_p}{(2/\\varepsilon_r-1)k_f} $$
+                        </div>
+                    </div>
+                `;
+                description = "ZBS模型的扩展版本，考虑了辐射传热的影响。模型基于Zehner, Bauer和Schlünder的工作，增加了辐射热传递项，使其特别适用于高温环境下的热传导计算，如催化剂床层或高温反应器。";
                 break;
                 
             case 'yagi_kunii_dispersion_axial':

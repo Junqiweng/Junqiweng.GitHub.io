@@ -69,6 +69,44 @@
                 color: #2C3E50 !important;
             }
         }
+        
+        /* 修复公式显示问题，移除滚动条 */
+        .formula-math {
+            overflow-x: visible !important;
+            white-space: nowrap;
+            max-width: none !important;
+        }
+        
+        .latex-formula {
+            white-space: nowrap;
+            overflow: visible;
+            max-width: 100%;
+            margin: 10px 0;
+        }
+        
+        /* 完全移除所有公式相关元素的滚动条 */
+        .formula {
+            overflow: visible !important;
+            max-width: none !important;
+            white-space: nowrap;
+        }
+        
+        /* 确保MathJax元素不显示滚动条 */
+        .MathJax_Display, .MathJax, .mjx-chtml {
+            overflow-x: visible !important;
+            overflow-y: visible !important;
+            max-width: none !important;
+        }
+        
+        /* 公式详情容器不显示滚动条，除了垂直方向 */
+        .formula-detail, .formula-legend {
+            overflow: visible !important;
+        }
+        
+        /* 模态框内容不显示滚动条，除了垂直方向 */
+        .modal-content {
+            overflow-x: visible !important;
+        }
     </style>
     <script>
         // Loading indicator management
