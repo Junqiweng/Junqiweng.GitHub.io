@@ -145,6 +145,10 @@
                                 <input type="number" id="particle_diameter" value="0.006" step="0.001" required>
                             </div>
                             <div class="input-group">
+                                <label class="tooltip" data-tooltip="反应器或管道的内径">🔹 管径 (m):</label>
+                                <input type="number" id="tube_particle_ratio" value="0.06" step="0.001" required>
+                            </div>
+                            <div class="input-group">
                                 <label class="tooltip" data-tooltip="床层空隙率，通常在0.35-0.75之间">🔹 空隙率 (-):</label>
                                 <input type="number" id="void_fraction" value="0.4" step="0.01" required>
                             </div>
@@ -153,15 +157,19 @@
                                 <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" required>
                             </div>
                             <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="1" step="0.01" required>
-                            </div>
-                            <div class="input-group">
                                 <label class="tooltip" data-tooltip="系统温度，影响辐射传热">🔹 温度 (K):</label>
                                 <input type="number" id="temperature" value="300" step="1" required>
                             </div>
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="系统压力，影响自由程计算">🔹 压力 (Pa):</label>
+                                <input type="number" id="pressure" value="101325" step="100" required>
+                            </div>
                         </div>
                         <div class="input-column">
+                            <div class="input-group">
+                                <label class="tooltip" data-tooltip="流体通过空床时的表观流速">🔹 流体表观速度 (m/s):</label>
+                                <input type="number" id="fluid_velocity" value="1" step="0.01" required>
+                            </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的热导率">🔹 流体导热系数 (W/m·K):</label>
                                 <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" required>
@@ -177,10 +185,6 @@
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (J/kg·K):</label>
                                 <input type="number" id="fluid_heat_capacity" value="1005" step="1" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="系统压力，影响自由程计算">🔹 压力 (Pa):</label>
-                                <input type="number" id="pressure" value="101325" step="100" required>
                             </div>
                             <div class="input-group">
                                 <label class="tooltip" data-tooltip="气体的摩尔质量，例如：空气约为0.029">🔹 气体摩尔质量 (kg/mol):</label>
@@ -215,38 +219,18 @@
                         <div class="correlation-group">
                             <h4>轴向弥散系数关联式</h4>
                             <label class="correlation-item">
-                                <input type="checkbox" id="yagi_kunii_dispersion_axial" checked>
-                                <span>📊 Yagi-Kunii轴向弥散</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii_dispersion_axial">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="vortmeyer_dispersion_axial" checked>
-                                <span>📊 Vortmeyer轴向弥散</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="vortmeyer_dispersion_axial">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="edwards_axial" checked>
-                                <span>📊 Edwards轴向弥散</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="edwards_axial">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="yagi_kunii_wakao_axial" checked>
+                                <span>📊 Yagi-Kunii-Wakao</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii_wakao_axial">ℹ️ 查看公式</a>
                             </label>
                         </div>
 
                         <div class="correlation-group">
                             <h4>径向弥散系数关联式</h4>
                             <label class="correlation-item">
-                                <input type="checkbox" id="yagi_kunii_dispersion_radial" checked>
-                                <span>📊 Yagi-Kunii径向弥散</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="yagi_kunii_dispersion_radial">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="bauer_schlunder_dispersion" checked>
-                                <span>📊 Bauer-Schlunder弥散</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="bauer_schlunder_dispersion">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                                <input type="checkbox" id="peclet_radial" checked>
-                                <span>📊 佩克莱数径向弥散</span>
-                                <a href="#" class="info-link correlation-info" data-correlation="peclet_radial">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="dixon_cresswell_radial" checked>
+                                <span>📊 Dixon-Cresswell</span>
+                                <a href="#" class="info-link correlation-info" data-correlation="dixon_cresswell_radial">ℹ️ 查看公式</a>
                             </label>
                         </div>
                     </div>

@@ -49,17 +49,31 @@
         /* 提高公式元素可见性 */
         .formula-section {
             background-color: #ffffff !important;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .formula-math {
             background-color: #ffffff !important;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
+        /* 确保MathJax公式显示正确 */
         .MathJax, .mjx-chtml, .mjx-char, .mjx-n, .mjx-mrow, .mjx-mi, 
         .mjx-mo, .mjx-mn, .mjx-msub, .mjx-msup, .mjx-msubsup {
             color: #2C3E50 !important;
-            opacity: 0.85 !important;
+            opacity: 1 !important;
             font-weight: normal !important;
+            display: inline-block !important;
         }
         
         /* 深色模式下也显示相同颜色公式 */
@@ -68,44 +82,89 @@
             .mjx-mo, .mjx-mn, .mjx-msub, .mjx-msup, .mjx-msubsup {
                 color: #2C3E50 !important;
             }
+            
+            .formula-section, .formula-math {
+                background-color: #ffffff !important;
+            }
         }
         
         /* 修复公式显示问题，移除滚动条 */
         .formula-math {
             overflow-x: visible !important;
-            white-space: nowrap;
-            max-width: none !important;
+            white-space: normal !important;
+            max-width: 100% !important;
         }
         
         .latex-formula {
-            white-space: nowrap;
-            overflow: visible;
-            max-width: 100%;
+            white-space: normal !important;
+            overflow: visible !important;
+            max-width: 100% !important;
             margin: 10px 0;
         }
         
         /* 完全移除所有公式相关元素的滚动条 */
         .formula {
             overflow: visible !important;
-            max-width: none !important;
-            white-space: nowrap;
+            max-width: 100% !important;
+            white-space: normal !important;
         }
         
         /* 确保MathJax元素不显示滚动条 */
         .MathJax_Display, .MathJax, .mjx-chtml {
             overflow-x: visible !important;
             overflow-y: visible !important;
-            max-width: none !important;
+            max-width: 100% !important;
         }
         
         /* 公式详情容器不显示滚动条，除了垂直方向 */
         .formula-detail, .formula-legend {
-            overflow: visible !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
         }
         
-        /* 模态框内容不显示滚动条，除了垂直方向 */
+        /* 模态框样式优化 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            padding: 20px;
+        }
+        
         .modal-content {
-            overflow-x: visible !important;
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            width: 85%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-close {
+            color: #999;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            transition: color 0.2s;
+        }
+        
+        .modal-close:hover,
+        .modal-close:focus {
+            color: #333;
+            text-decoration: none;
         }
     </style>
     <script>
@@ -115,28 +174,51 @@
         });
     </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <!-- Load MathJax -->
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
+    <!-- 首先尝试加载MathJax 3.x -->
     <script>
         window.MathJax = {
+            loader: {
+                load: ['[tex]/ams']
+            },
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true
+                processEscapes: true,
+                packages: {'[+]': ['ams']}
             },
             svg: {
                 fontCache: 'global',
                 scale: 1.1
             },
-            startup: {
-                typeset: false
-            },
             options: {
-                enableMenu: false
+                enableMenu: false,
+                renderActions: {
+                    addMenu: [], // 禁用右键菜单
+                    checkLoading: []
+                }
+            },
+            startup: {
+                pageReady: function() {
+                    console.log("MathJax准备就绪");
+                    return MathJax.startup.defaultPageReady();
+                }
             }
         };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <!-- 如果MathJax 3加载失败，尝试加载MathJax 2 -->
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (!window.MathJax || !window.MathJax.typesetPromise) {
+                    console.log("加载MathJax 2作为备选");
+                    var script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML';
+                    script.async = true;
+                    document.head.appendChild(script);
+                }
+            }, 1000);
+        });
     </script>
 </head>
 <body>
@@ -202,32 +284,87 @@
                     <h3>计算方程</h3>
                     <div class="equation-list">
                         <div class="equations-group">
-                            <h4>低雷诺数区域 (Re < 100)</h4>
+                            <h4>经典壁面传热关联式</h4>
+                            <label class="equation-item">
+                                <input type="checkbox" id="leva" checked>
+                                <span>📊 Leva (1947)</span>
+                                <a href="#" class="info-link equation-info" data-formula="leva">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="leva_et_al" checked>
+                                <span>📊 Leva et al. (1948)</span>
+                                <a href="#" class="info-link equation-info" data-formula="leva_et_al">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="chu_storrow" checked>
+                                <span>📊 Chu and Storrow (1952)</span>
+                                <a href="#" class="info-link equation-info" data-formula="chu_storrow">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="yagi_wakao" checked>
+                                <span>📊 Yagi and Wakao (1959)</span>
+                                <a href="#" class="info-link equation-info" data-formula="yagi_wakao">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="kunii_et_al" checked>
+                                <span>📊 Kunii et al. (1968)</span>
+                                <a href="#" class="info-link equation-info" data-formula="kunii_et_al">ℹ️ 查看公式</a>
+                            </label>
+                        </div>
+                        <div class="equations-group">
+                            <h4>现代壁面传热关联式</h4>
+                            <label class="equation-item">
+                                <input type="checkbox" id="olbrich_potter" checked>
+                                <span>📊 Olbrich and Potter (1972)</span>
+                                <a href="#" class="info-link equation-info" data-formula="olbrich_potter">ℹ️ 查看公式</a>
+                            </label>
                             <label class="equation-item">
                                 <input type="checkbox" id="li_finlayson" checked>
-                                <span>📊 Li & Finlayson 关联式</span>
+                                <span>📊 Li and Finlayson (1977)</span>
                                 <a href="#" class="info-link equation-info" data-formula="li_finlayson">ℹ️ 查看公式</a>
                             </label>
                             <label class="equation-item">
-                                <input type="checkbox" id="dixon_cresswell" checked>
-                                <span>📊 Dixon & Cresswell 关联式</span>
-                                <a href="#" class="info-link equation-info" data-formula="dixon_cresswell">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="specchia_et_al" checked>
+                                <span>📊 Specchia et al. (1980)</span>
+                                <a href="#" class="info-link equation-info" data-formula="specchia_et_al">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="colledge_paterson" checked>
+                                <span>📊 Colledge and Paterson (1984)</span>
+                                <a href="#" class="info-link equation-info" data-formula="colledge_paterson">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="dixon_et_al" checked>
+                                <span>📊 Dixon et al. (1984)</span>
+                                <a href="#" class="info-link equation-info" data-formula="dixon_et_al">ℹ️ 查看公式</a>
                             </label>
                         </div>
                         <div class="equations-group">
-                            <h4>中等雷诺数区域 (50 < Re < 500)</h4>
+                            <h4>最新壁面传热关联式</h4>
                             <label class="equation-item">
-                                <input type="checkbox" id="specchia" checked>
-                                <span>📊 Specchia 关联式</span>
-                                <a href="#" class="info-link equation-info" data-formula="specchia">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="peters_et_al" checked>
+                                <span>📊 Peters et al. (1988)</span>
+                                <a href="#" class="info-link equation-info" data-formula="peters_et_al">ℹ️ 查看公式</a>
                             </label>
-                        </div>
-                        <div class="equations-group">
-                            <h4>高雷诺数区域 (Re > 100)</h4>
                             <label class="equation-item">
-                                <input type="checkbox" id="de_wasch_froment" checked>
-                                <span>📊 De Wasch & Froment 关联式</span>
-                                <a href="#" class="info-link equation-info" data-formula="de_wasch_froment">ℹ️ 查看公式</a>
+                                <input type="checkbox" id="martin_nilles" checked>
+                                <span>📊 Martin and Nilles (1993)</span>
+                                <a href="#" class="info-link equation-info" data-formula="martin_nilles">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="demirel_et_al" checked>
+                                <span>📊 Demirel et al. (2000)</span>
+                                <a href="#" class="info-link equation-info" data-formula="demirel_et_al">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="laguerre_et_al" checked>
+                                <span>📊 Laguerre et al. (2006)</span>
+                                <a href="#" class="info-link equation-info" data-formula="laguerre_et_al">ℹ️ 查看公式</a>
+                            </label>
+                            <label class="equation-item">
+                                <input type="checkbox" id="das_et_al" checked>
+                                <span>📊 Das et al. (2017)</span>
+                                <a href="#" class="info-link equation-info" data-formula="das_et_al">ℹ️ 查看公式</a>
                             </label>
                         </div>
                     </div>

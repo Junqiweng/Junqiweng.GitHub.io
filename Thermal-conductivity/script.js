@@ -11,6 +11,24 @@ document.addEventListener('DOMContentLoaded', function() {
         .error-value .value-number {
             text-decoration: underline wavy #e74c3c;
         }
+        .info-note {
+            background-color: #f0f9ff;
+            border-left: 4px solid #3498db;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 0.92em;
+            display: flex;
+            align-items: center;
+        }
+        .info-icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        .info-text {
+            line-height: 1.4;
+            color: #444;
+        }
     `;
     document.head.appendChild(errorStyle);
 
@@ -166,277 +184,105 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>`
         },
+        zbs_static_radiation: {
+            title: "ZBS(Zehner-Bauer-Schlünder)静态导热系数关联式（含辐射）",
+            formula: `$$ \\lambda_{bed}^0 = \\lambda_f \\left[ (1 - \\sqrt{1-\\epsilon})\\epsilon \\left(\\frac{1}{\\frac{1}{\\epsilon} - \\frac{1}{k_G}} + k_r\\right) + \\sqrt{1-\\epsilon}(\\phi\\kappa + (1-\\phi)k_c) \\right] $$`,
+            parameters: [
+                ["\\lambda_{bed}^0", "静态有效导热系数（含辐射）", "固定床在无流动状态下的导热系数"],
+                ["\\lambda_f", "流体导热系数", "床层中流体的导热系数"],
+                ["\\epsilon", "空隙率", "床层的孔隙度"],
+                ["\\kappa", "导热比", "固体与流体导热系数的比值 (λ_s/λ_f)"],
+                ["k_r", "辐射导热系数", "考虑辐射效应的参数"],
+                ["k_G", "气相导热比", "通常为1"],
+                ["\\phi", "形状因子", "与颗粒接触有关的参数，通常取0.0077"]
+            ],
+            theory: `<p><strong>ZBS模型（含辐射）</strong>在原ZBS模型基础上增加了辐射传热的贡献，适用于高温条件下的固定床。</p>
+            <p>关键特点：</p>
+            <ul>
+                <li>考虑了辐射传热对有效导热系数的贡献</li>
+                <li>适用于高温反应器和催化剂床层</li>
+                <li>在低温条件下，辐射项接近于零，模型简化为标准ZBS模型</li>
+            </ul>`,
+            applicability: `<div class="applicability-conditions">
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">特别适用于高温固定床反应器</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">适合温度＞500K的工况</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">适用于催化剂再生器和高温裂解反应器</span>
+    </div>
+</div>`
+        },
         
         // 轴向弥散系数关联式
-        yagi_kunii_dispersion_axial: {
-            title: "Yagi-Kunii轴向弥散系数关联式",
-            formula: "$$ \\frac{k_{ea}}{k_0} = 1 + \\frac{Pe_p}{2} $$",
+        yagi_kunii_wakao_axial: {
+            title: "Yagi-Kunii/Wakao-Kaguei 轴向弥散系数模型",
+            formula: `$$ \\ k_{ea}= C_{disp,a}·\\rho_f·Cp_f·u·d_p $$`,
             parameters: [
-                ["k_{ea}", "轴向有效导热系数", "考虑流动影响的轴向导热系数"],
-                ["k_0", "静态有效导热系数", "无流动状态下的导热系数"],
-                ["Pe_p", "颗粒佩克莱数", "颗粒尺度下的对流与传导比值 (Pe_p = Re_p·Pr)"]
+                ["k_{ea}", "轴向弥散系数", "W/m·K"],
+                ["C_{disp,a}", "轴向弥散系数", "对于气体和液体，推荐值为0.5 (K_a = 2)"],  
             ],
-            theory: `<p><strong>Yagi-Kunii轴向弥散关联式</strong>基于静态导热和流动引起的弥散效应的叠加。</p>
+            theory: `<p><strong>Yagi-Kunii/Wakao-Kaguei轴向弥散模型</strong>描述了流体流动引起的导热贡献。</p>
             <p>关键特点：</p>
             <ul>
-                <li>将轴向导热分为静态部分和流动部分</li>
-                <li>佩克莱数表示对流传热与导热的比值</li>
-                <li>系数1/2表示流动对轴向传热的增强效应</li>
-            </ul>
-            <p>这是一个经典模型，形式简单但物理意义明确，广泛应用于反应器工程。</p>`,
+                <li>轴向弥散系数与颗粒佩克莱数成正比</li>
+                <li>对于气体和液体系统，推荐[C_{disp,a}≈0.5 (K_a = 2)</li>
+                <li>与径向弥散系数相比，轴向弥散通常是径向的4-5倍</li>
+                <li>此版本仅计算弥散效应，不包含静态导热系数</li>
+            </ul>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于低雷诺数(Re_p < 100)的层流区域</span>
+        <span class="condition-text">适用于大多数固定床反应器的轴向热传导计算</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">适合中等颗粒尺寸的固定床</span>
+        <span class="condition-text">适用于气相和液相系统</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">气固系统有较好的预测能力</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于轴向温度梯度明显的系统</span>
-    </div>
-</div>`
-        },
-        vortmeyer_dispersion_axial: {
-            title: "Vortmeyer轴向弥散系数关联式",
-            formula: "$$ \\frac{k_{ea}}{k_g} = \\epsilon + 0.75 \\cdot Pr \\cdot Re_p $$",
-            parameters: [
-                ["k_{ea}", "轴向有效导热系数", "考虑流动影响的轴向导热系数"],
-                ["k_g", "气体导热系数", "床层中流体的导热系数"],
-                ["\\epsilon", "空隙率", "床层的孔隙度"],
-                ["Pr", "普朗特数", "流体的动量扩散与热扩散的比值"],
-                ["Re_p", "颗粒雷诺数", "基于颗粒直径的雷诺数"]
-            ],
-            theory: `<p><strong>Vortmeyer关联式</strong>直接将轴向有效导热系数与流体导热系数关联，结构简单明了。</p>
-            <p>关键特点：</p>
-            <ul>
-                <li>考虑空隙率作为静态导热的贡献</li>
-                <li>雷诺数与普朗特数的乘积表示流动的影响</li>
-                <li>系数0.75反映了流动混合的强度</li>
-            </ul>
-            <p>这种简化形式在工程计算中很实用，尤其适合于初步设计阶段。</p>`,
-            applicability: `<div class="applicability-conditions">
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于中高雷诺数区域(10 < Re_p < 1000)</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">对于气固系统有较好的预测能力</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">计算简单，工程应用方便</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于空隙率0.3-0.5的常规填充床</span>
-    </div>
-</div>`
-        },
-        edwards_axial: {
-            title: "Edwards轴向弥散系数关联式",
-            formula: "$$ \\frac{k_{ea}}{k_g} = \\frac{k_0}{k_g} + 0.5 \\cdot Re_p \\cdot Pr $$",
-            parameters: [
-                ["k_{ea}", "轴向有效导热系数", "考虑流动影响的轴向导热系数"],
-                ["k_g", "气体导热系数", "床层中流体的导热系数"],
-                ["k_0", "静态有效导热系数", "无流动状态下的导热系数"],
-                ["Re_p", "颗粒雷诺数", "基于颗粒直径的雷诺数"],
-                ["Pr", "普朗特数", "流体的动量扩散与热扩散的比值"]
-            ],
-            theory: `<p><strong>Edwards关联式</strong>在静态导热系数的基础上，加入了与流体流动相关的贡献项。</p>
-            <p>关键特点：</p>
-            <ul>
-                <li>明确区分了静态导热和流动导热的贡献</li>
-                <li>系数0.5表示流动混合对轴向传热的增强</li>
-                <li>结合了静态传热模型和对流传热模型</li>
-            </ul>
-            <p>形式简单但适用性较广，是反应器设计中常用的轴向导热模型。</p>`,
-            applicability: `<div class="applicability-conditions">
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用范围广，特别适合中等雷诺数(10 < Re_p < 500)</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">气固系统和液固系统均有良好的预测能力</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于催化剂填充床反应器</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">结合静态导热模型使用效果更佳</span>
+        <span class="condition-text">雷诺数范围：Re_p = 10-10000</span>
     </div>
 </div>`
         },
         
         // 径向弥散系数关联式
-        yagi_kunii_dispersion_radial: {
-            title: "Yagi-Kunii径向弥散系数关联式",
-            formula: "$$ \\frac{k_{er}}{k_0} = 1 + \\frac{Pe_p}{10} $$",
+        dixon_cresswell_radial: {
+            title: "Dixon-Cresswell 径向弥散系数模型",
+            formula: `$$ \\ k_{er} = \\frac{\\rho_f·Cp_f·u·d_p}{K_5} $$
+            $$ K_5 = 8.65 \\left[ 1 + 1.94 \\left( \\frac{d_p}{d_t} \\right)^2 \\right] $$`,
             parameters: [
-                ["k_{er}", "径向有效导热系数", "考虑流动影响的径向导热系数"],
-                ["k_0", "静态有效导热系数", "无流动状态下的导热系数"],
-                ["Pe_p", "颗粒佩克莱数", "颗粒尺度下的对流与传导比值 (Pe_p = Re_p·Pr)"]
-            ],
-            theory: `<p><strong>Yagi-Kunii径向弥散关联式</strong>表示径向导热系数受流动影响的程度。</p>
-            <p>关键特点：</p>
-            <ul>
-                <li>与轴向关联式结构相似，但系数不同</li>
-                <li>系数(1/10)小于轴向弥散系数(1/2)，表明径向弥散影响较小</li>
-                <li>基于物理实验和理论分析得出</li>
-            </ul>
-            <p>这个关联式反映了固定床中径向导热通常比轴向导热弱的物理事实。</p>`,
-            applicability: `<div class="applicability-conditions">
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于低雷诺数(Re_p < 100)的层流区域</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">在气固固定床中有较好的预测能力</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于径向温度梯度存在的系统</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">与轴向模型配合使用效果更佳</span>
-    </div>
-</div>`
-        },
-        bauer_schlunder_dispersion: {
-            title: "Bauer-Schlünder径向弥散系数关联式",
-            formula: "$$ \\frac{k_{er}}{k_g} = 8 \\cdot \\left( \\frac{k_0}{k_g} \\right) + 0.1 \\cdot Re_p \\cdot Pr $$",
-            parameters: [
-                ["k_{er}", "径向有效导热系数", "考虑流动影响的径向导热系数"],
-                ["k_g", "气体导热系数", "床层中流体的导热系数"],
-                ["k_0", "静态有效导热系数", "无流动状态下的导热系数"],
-                ["Re_p", "颗粒雷诺数", "基于颗粒直径的雷诺数"],
-                ["Pr", "普朗特数", "流体的动量扩散与热扩散的比值"]
-            ],
-            theory: `<p><strong>Bauer-Schlünder关联式</strong>结合了静态导热和流体混合的贡献。</p>
-            <p>关键特点：</p>
-            <ul>
-                <li>系数8表示静态导热在径向传热中的重要性</li>
-                <li>系数0.1表示流体混合对径向传热的贡献</li>
-                <li>形式与Edwards轴向关联式类似，但参数不同</li>
-            </ul>
-            <p>这个模型强调了在径向传热中，静态导热比流体混合更为重要。</p>`,
-            applicability: `<div class="applicability-conditions">
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于中高雷诺数区域(10 < Re_p < 2000)</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">对于大多数工业固定床反应器有较好的预测能力</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于气固和液固系统</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">特别适合径向热传递重要的大直径反应器</span>
-    </div>
-</div>`
-        },
-        peclet_radial: {
-            title: "佩克莱数径向弥散系数关联式",
-            formula: "$$ \\frac{k_{er}}{k_g} = \\frac{k_0}{k_g} + \\frac{Re_p \\cdot Pr}{Pe_r} $$",
-            parameters: [
-                ["k_{er}", "径向有效导热系数", "考虑流动影响的径向导热系数"],
-                ["k_g", "气体导热系数", "床层中流体的导热系数"],
-                ["k_0", "静态有效导热系数", "无流动状态下的导热系数"],
-                ["Re_p", "颗粒雷诺数", "基于颗粒直径的雷诺数"],
-                ["Pr", "普朗特数", "流体的动量扩散与热扩散的比值"],
-                ["Pe_r", "径向佩克莱数", "径向混合特性参数，通常为8-12"]
-            ],
-            theory: `<p><strong>佩克莱数关联式</strong>基于佩克莱数的概念，将径向热扩散与流体流动和颗粒特性联系起来。</p>
-            <p>关键特点：</p>
-            <ul>
-                <li>径向佩克莱数Pe_r是一个经验常数，表示径向混合的难易程度</li>
-                <li>结合了静态导热和流动导热的贡献</li>
-                <li>形式灵活，可通过调整Pe_r适应不同系统</li>
-            </ul>
-            <p>这个模型在反应器设计中广泛使用，特别是对于需要精确控制温度分布的系统。</p>`,
-            applicability: `<div class="applicability-conditions">
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">广泛适用于各种固定床系统</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">特别适用于气固系统</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">对于径向温度梯度明显的反应器设计非常有用</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">Pe_r参数可根据具体情况调整(通常取8-12)</span>
-    </div>
-</div>`
-        },
-        zbs_static_radiation: {
-            title: "ZBS (Zehner-Bauer-Schlünder) 静态导热系数模型（含辐射）",
-            formula: `
-                <div class="formula">
-                    <div class="latex-formula">
-                        $$ k_{eff,f} = k_f[(1-\\sqrt{1-\\varepsilon})\\varepsilon((\\varepsilon-1+1/k_G)^{-1}+k_r) + \\sqrt{1-\\varepsilon}(\\phi k_{s/f}+(1-\\phi)k_c)] $$
-                    </div>
-                    <div class="latex-formula">
-                        $$ k_r = \\frac{4\\sigma T^3d_p}{(2/\\varepsilon_r-1)k_f} $$
-                    </div>
-                </div>
-            `,
-            parameters: [
-                ["k_f", "流体导热系数", "床层中流体的导热系数"],
-                ["k_{s/f}", "固体流体导热系数比值", "固体与流体导热系数的比值"],
-                ["ε", "床层孔隙率", "床层的孔隙度"],
-                ["k_r", "辐射参数", "通常在高温下考虑，低温可忽略"],
-                ["k_G", "Knudsen参数", "气体分子平均自由程与颗粒直径的比值"],
-                ["k_c", "综合热导参数", "综合考虑了流体导热、固体导热和辐射传热的参数"],
-                ["φ", "形状因子", "球形颗粒约为0.0077"],
-                ["σ", "Stefan-Boltzmann常数", "W/(m²·K⁴)"],
-                ["T", "温度", "K"],
+                ["k_{er}", "径向弥散系数", "W/m·K"],
+                ["k_f", "流体导热系数", "W/m·K"],
+                ["K_5", "考虑壁面效应的参数", "当d_t/d_p很大时（壁面影响小），K_5≈8.65"],
                 ["d_p", "颗粒直径", "m"],
-                ["ε_r", "辐射发射率", "通常在高温下考虑，低温可忽略"]
+                ["d_t", "反应器/管直径", "m"]
             ],
-            theory: `<p><strong>ZBS辐射模型</strong>考虑了辐射传热的影响。模型基于Zehner, Bauer和Schlünder的工作，增加了辐射热传递项，使其特别适用于高温环境下的热传导计算，如催化剂床层或高温反应器。</p>
+            theory: `<p><strong>Dixon-Cresswell径向弥散模型</strong>考虑了管径与颗粒直径比对径向弥散的影响。</p>
             <p>关键特点：</p>
             <ul>
-                <li>考虑了辐射传热的影响</li>
-                <li>综合考虑了流体导热、固体导热和辐射传热的贡献</li>
-                <li>适用于高温环境下的热传导计算</li>
+                <li>通过K_5参数考虑管壁效应</li>
+                <li>当d_t/d_p很大时（壁面影响小），K_5≈8.65，接近Yagi和Kunii的结果</li>
+                <li>当d_t/d_p较小时，壁面附近空隙率增大，流速不均，导致径向混合减弱，K_5增大，动态贡献减小</li>
+                <li>此版本仅计算弥散效应，不包含静态导热系数</li>
             </ul>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于高温环境下的热传导计算</span>
+        <span class="condition-text">特别适用于小直径反应器或大颗粒系统</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">特别适合催化剂床层或高温反应器</span>
+        <span class="condition-text">适用于d_t/d_p = 5-30的范围</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
         <span class="condition-text">适用于气固和液固系统</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">低温可忽略辐射导热部分</span>
     </div>
 </div>`
         }
@@ -675,7 +521,11 @@ document.addEventListener('DOMContentLoaded', function() {
             'fluid_thermal_conductivity': '0.0257',
             'fluid_density': '1.225',
             'fluid_viscosity': '1.81e-5',
-            'fluid_heat_capacity': '1005'
+            'fluid_heat_capacity': '1005',
+            'temperature': '300',
+            'pressure': '101325',
+            'molar_mass': '0.029',
+            'tube_particle_ratio': '0.06'  // 管径默认值，对应于之前的比值10
         };
         
         // 应用默认值
@@ -725,8 +575,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 fluidHeatCapacity: getInputValue('fluid_heat_capacity'),
                 temperature: getInputValue('temperature'),
                 pressure: getInputValue('pressure'),
-                molarMass: getInputValue('molar_mass')
+                molarMass: getInputValue('molar_mass'),
+                tubeDiameter: getInputValue('tube_particle_ratio') // 现在获取的是管径而不是比值
             };
+            
+            // 计算管径与颗粒直径比值
+            inputs.tubeParticleRatio = inputs.tubeDiameter / inputs.particleDiameter;
+            console.log(`计算管径/颗粒直径比值: ${inputs.tubeDiameter} / ${inputs.particleDiameter} = ${inputs.tubeParticleRatio}`);
             
             // 验证输入
             for (const [key, value] of Object.entries(inputs)) {
@@ -756,25 +611,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // 轴向弥散
-            if (document.getElementById('yagi_kunii_dispersion_axial').checked) {
-                selectedCorrelations.axial.push('yagi_kunii_dispersion_axial');
-            }
-            if (document.getElementById('vortmeyer_dispersion_axial').checked) {
-                selectedCorrelations.axial.push('vortmeyer_dispersion_axial');
-            }
-            if (document.getElementById('edwards_axial').checked) {
-                selectedCorrelations.axial.push('edwards_axial');
+            if (document.getElementById('yagi_kunii_wakao_axial').checked) {
+                selectedCorrelations.axial.push('yagi_kunii_wakao_axial');
             }
             
             // 径向弥散
-            if (document.getElementById('yagi_kunii_dispersion_radial').checked) {
-                selectedCorrelations.radial.push('yagi_kunii_dispersion_radial');
-            }
-            if (document.getElementById('bauer_schlunder_dispersion').checked) {
-                selectedCorrelations.radial.push('bauer_schlunder_dispersion');
-            }
-            if (document.getElementById('peclet_radial').checked) {
-                selectedCorrelations.radial.push('peclet_radial');
+            if (document.getElementById('dixon_cresswell_radial').checked) {
+                selectedCorrelations.radial.push('dixon_cresswell_radial');
             }
             
             // 计算中间变量
@@ -975,47 +818,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 计算轴向导热系数
     function calculateAxialConductivity(inputs, correlations, Re, Pr) {
         const results = {};
-        const { voidFraction, fluidThermalConductivity } = inputs;
-        const Pe = Re * Pr;
-        
-        // 在计算静态导热系数时也考虑ZBS静态导热（辐射）模型
-        const staticModels = ['yagi_kunii_static', 'zbs_static'];
-        if (document.getElementById('zbs_static_radiation').checked) {
-            staticModels.push('zbs_static_radiation');
-        }
-        const staticResults = calculateStaticConductivity(inputs, staticModels);
-        const k0 = parseFloat(staticResults['average']);
-        
-        if (correlations.includes('yagi_kunii_dispersion_axial')) {
-            // Yagi-Kunii 轴向弥散
-            const kea_yagi = k0 * (1 + Pe / 2);
-            results['yagi_kunii_dispersion_axial'] = kea_yagi.toFixed(4);
-        }
-        
-        if (correlations.includes('vortmeyer_dispersion_axial')) {
-            // Vortmeyer 轴向弥散
-            const kea_vortmeyer = fluidThermalConductivity * (voidFraction + 0.75 * Pr * Re);
-            results['vortmeyer_dispersion_axial'] = kea_vortmeyer.toFixed(4);
-        }
-        
-        if (correlations.includes('edwards_axial')) {
-            // Edwards 轴向弥散
-            const kea_edwards = fluidThermalConductivity * (k0 / fluidThermalConductivity + 0.5 * Re * Pr);
-            results['edwards_axial'] = kea_edwards.toFixed(4);
-        }
-        
-        // 计算平均值
-        if (Object.keys(results).length > 0) {
-            const sum = Object.values(results).reduce((acc, val) => acc + parseFloat(val), 0);
-            results['average'] = (sum / Object.keys(results).length).toFixed(4);
-        }
-        
-        return results;
-    }
-    
-    // 计算径向导热系数
-    function calculateRadialConductivity(inputs, correlations, Re, Pr) {
-        const results = {};
         const { fluidThermalConductivity } = inputs;
         const Pe = Re * Pr;
         
@@ -1027,29 +829,69 @@ document.addEventListener('DOMContentLoaded', function() {
         const staticResults = calculateStaticConductivity(inputs, staticModels);
         const k0 = parseFloat(staticResults['average']);
         
-        if (correlations.includes('yagi_kunii_dispersion_radial')) {
-            // Yagi-Kunii 径向弥散
-            const ker_yagi = k0 * (1 + Pe / 10);
-            results['yagi_kunii_dispersion_radial'] = ker_yagi.toFixed(4);
-        }
-        
-        if (correlations.includes('bauer_schlunder_dispersion')) {
-            // Bauer-Schlunder 径向弥散
-            const ker_bauer = fluidThermalConductivity * (8 * (k0 / fluidThermalConductivity) + 0.1 * Re * Pr);
-            results['bauer_schlunder_dispersion'] = ker_bauer.toFixed(4);
-        }
-        
-        if (correlations.includes('peclet_radial')) {
-            // 佩克莱数径向弥散
-            const Pe_r = 10; // 典型值
-            const ker_pe = fluidThermalConductivity * (k0 / fluidThermalConductivity + (Re * Pr) / Pe_r);
-            results['peclet_radial'] = ker_pe.toFixed(4);
+        // 添加Yagi-Kunii/Wakao-Kaguei轴向弥散模型
+        if (correlations.includes('yagi_kunii_wakao_axial')) {
+            // 计算轴向弥散导热系数，Cdisp,a = 0.5 (Ka = 2)
+            const Cdisp_a = 0.5; // 气体和液体推荐值
+            const dispersion = fluidThermalConductivity * Cdisp_a * Pe;
+            // 删除静态有效导热系数的贡献，只考虑弥散部分
+            // const kea = k0 + dispersion;
+            const kea = dispersion;
+            
+            results['yagi_kunii_wakao_axial'] = kea.toFixed(4);
+            results['yagi_kunii_wakao_axial_disp_only'] = dispersion.toFixed(4); // 仅弥散部分
         }
         
         // 计算平均值
         if (Object.keys(results).length > 0) {
-            const sum = Object.values(results).reduce((acc, val) => acc + parseFloat(val), 0);
-            results['average'] = (sum / Object.keys(results).length).toFixed(4);
+            // 仅使用总有效导热系数计算平均值
+            const totalConductivityKeys = ['yagi_kunii_wakao_axial'];
+            const validKeys = totalConductivityKeys.filter(key => Object.keys(results).includes(key));
+            const sum = validKeys.reduce((acc, key) => acc + parseFloat(results[key]), 0);
+            results['average'] = (sum / validKeys.length).toFixed(4);
+        }
+        
+        return results;
+    }
+    
+    // 计算径向导热系数
+    function calculateRadialConductivity(inputs, correlations, Re, Pr) {
+        const results = {};
+        const { fluidThermalConductivity, tubeParticleRatio } = inputs;
+        const Pe = Re * Pr;
+        
+        // 在计算静态导热系数时也考虑ZBS静态导热（辐射）模型
+        const staticModels = ['yagi_kunii_static', 'zbs_static'];
+        if (document.getElementById('zbs_static_radiation').checked) {
+            staticModels.push('zbs_static_radiation');
+        }
+        const staticResults = calculateStaticConductivity(inputs, staticModels);
+        const k0 = parseFloat(staticResults['average']);
+        
+        // 添加Dixon-Cresswell径向弥散模型
+        if (correlations.includes('dixon_cresswell_radial')) {
+            // 计算K5参数 - 考虑壁面效应
+            const dt_dp = tubeParticleRatio || 10; // 默认值为10（如果未提供）
+            const K5 = 8.65 * (1 + 1.94 * Math.pow(dt_dp, -2));
+            
+            // 计算径向弥散导热系数
+            const dispersion = fluidThermalConductivity * (Pe / K5);
+            // 删除静态有效导热系数的贡献，只考虑弥散部分
+            // const ker = k0 + dispersion;
+            const ker = dispersion;
+            
+            results['dixon_cresswell_radial'] = ker.toFixed(4);
+            results['dixon_cresswell_radial_disp_only'] = dispersion.toFixed(4); // 仅弥散部分
+            results['dixon_cresswell_K5'] = K5.toFixed(4); // 输出K5参数值
+        }
+        
+        // 计算平均值
+        if (Object.keys(results).length > 0) {
+            // 仅使用总有效导热系数计算平均值
+            const totalConductivityKeys = ['dixon_cresswell_radial'];
+            const validKeys = totalConductivityKeys.filter(key => Object.keys(results).includes(key));
+            const sum = validKeys.reduce((acc, key) => acc + parseFloat(results[key]), 0);
+            results['average'] = (sum / validKeys.length).toFixed(4);
         }
         
         return results;
@@ -1076,7 +918,8 @@ document.addEventListener('DOMContentLoaded', function() {
             fluidHeatCapacity: getInputValue('fluid_heat_capacity'),
             temperature: getInputValue('temperature'),
             pressure: getInputValue('pressure'),
-            molarMass: getInputValue('molar_mass')
+            molarMass: getInputValue('molar_mass'),
+            tubeDiameter: getInputValue('tube_particle_ratio')
         };
         
         // 构建结果HTML
@@ -1095,6 +938,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="value-with-unit">
                                 <span class="value-number">${formatNumber(inputs.particleDiameter)}</span>
                                 <span class="value-unit">m</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>管径</td>
+                        <td class="value-column">
+                            <div class="value-with-unit">
+                                <span class="value-number">${formatNumber(inputs.tubeDiameter)}</span>
+                                <span class="value-unit">m</span>
+                            </div>
+                            <div class="parameter-info">
+                                <small>管径/颗粒直径比值: ${formatNumber(inputs.tubeParticleRatio)}</small>
                             </div>
                         </td>
                     </tr>
@@ -1249,17 +1104,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 添加静态导热系数结果
         Object.entries(results.static).forEach(([key, value]) => {
             if (key === 'average') {
-                html += `
-                    <tr class="average-row">
-                        <td><strong>平均值</strong></td>
-                        <td class="value-column">
-                            <div class="value-with-unit">
-                                <span class="value-number"><strong>${value}</strong></span>
-                                <span class="value-unit">${value === "无有效结果" ? "" : "W/m·K"}</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                // 移除平均值显示
+                return;
             } else {
                 const correlationName = key === 'yagi_kunii_static' ? 'Yagi-Kunii静态导热' : 
                                            (key === 'zbs_static' ? 'ZBS静态导热' : 
@@ -1325,62 +1171,36 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="result-card axial-card">
                 <div class="section-header">
                     <span class="section-icon">⬆️</span>
-                    <span class="section-title">轴向有效导热系数 (W/m·K)</span>
+                    <span class="section-title">轴向弥散系数 (W/m·K)</span>
+                </div>
+                <div class="info-note">
+                    <span class="info-icon">ℹ️</span>
+                    <span class="info-text">此处展示了流体流动引起的弥散导热贡献，不包含静态导热系数。</span>
                 </div>
                 <table class="results-table">
                     <tr>
                         <th>关联式</th>
-                        <th>数值</th>
+                        <th>弥散系数</th>
                     </tr>
         `;
         
         // 获取轴向导热系数的最大值和最小值
         const axialValues = Object.entries(results.axial)
-            .filter(([key]) => key !== 'average')
+            .filter(([key]) => key !== 'average' && !key.includes('_disp_only'))
             .map(([_, value]) => parseFloat(value));
         const axialMinValue = Math.min(...axialValues);
         const axialMaxValue = Math.max(...axialValues);
         
         // 添加轴向导热系数结果
         Object.entries(results.axial).forEach(([key, value]) => {
-            if (key === 'average') {
-                html += `
-                    <tr class="average-row">
-                        <td><strong>平均值</strong></td>
-                        <td class="value-column">
-                            <div class="value-with-unit">
-                                <span class="value-number"><strong>${value}</strong></span>
-                                <span class="value-unit">W/m·K</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            } else {
+            if (key !== 'average' && !key.includes('_disp_only')) {
                 let correlationName = '';
                 switch(key) {
-                    case 'yagi_kunii_dispersion_axial':
-                        correlationName = 'Yagi-Kunii轴向弥散';
+                    case 'yagi_kunii_wakao_axial':
+                        correlationName = 'Yagi-Kunii/Wakao';
                         break;
-                    case 'vortmeyer_dispersion_axial':
-                        correlationName = 'Vortmeyer轴向弥散';
-                        break;
-                    case 'edwards_axial':
-                        correlationName = 'Edwards轴向弥散';
-                        break;
-                }
-                
-                let indication = '';
-                let badgeClass = '';
-                
-                if (axialValues.length > 1) {
-                    if (parseFloat(value) === axialMinValue) {
-                        indication = '最小值';
-                        badgeClass = 'min-badge';
-                    }
-                    if (parseFloat(value) === axialMaxValue) {
-                        indication = '最大值';
-                        badgeClass = 'max-badge';
-                    }
+                    default:
+                        correlationName = key;
                 }
                 
                 html += `
@@ -1395,7 +1215,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="value-with-unit">
                                 <span class="value-number">${value}</span>
                                 <span class="value-unit">W/m·K</span>
-                                ${indication ? `<span class="result-badge ${badgeClass}">${indication}</span>` : ''}
                             </div>
                         </td>
                     </tr>
@@ -1405,135 +1224,46 @@ document.addEventListener('DOMContentLoaded', function() {
         
         html += `
                 </table>
-        `;
-        
-        // 如果有多个轴向结果，添加图表
-        if (axialValues.length > 1) {
-            const axialDifference = (axialMaxValue - axialMinValue).toFixed(4);
-            const axialAvgValue = (axialValues.reduce((a, b) => a + b, 0) / axialValues.length).toFixed(4);
-            const axialPercentDiff = ((axialMaxValue - axialMinValue) / parseFloat(axialAvgValue) * 100).toFixed(2);
-            
-            html += `
-                <div class="result-chart">
-                    <div class="chart-title">轴向导热系数结果图示比较</div>
-                    <div class="bar-chart">
-            `;
-            
-            Object.entries(results.axial).forEach(([key, value]) => {
-                if (key !== 'average') {
-                    let correlationName = '';
-                    switch(key) {
-                        case 'yagi_kunii_dispersion_axial':
-                            correlationName = 'Yagi-Kunii轴向弥散';
-                            break;
-                        case 'vortmeyer_dispersion_axial':
-                            correlationName = 'Vortmeyer轴向弥散';
-                            break;
-                        case 'edwards_axial':
-                            correlationName = 'Edwards轴向弥散';
-                            break;
-                    }
-                    
-                    const percent = (parseFloat(value) / axialMaxValue * 100).toFixed(1);
-                    let barClass = "";
-                    if (parseFloat(value) === axialMinValue) barClass = "min-bar";
-                    if (parseFloat(value) === axialMaxValue) barClass = "max-bar";
-                    
-                    html += `
-                        <div class="chart-row">
-                            <div class="chart-label">${correlationName}</div>
-                            <div class="chart-bar-container">
-                                <div class="chart-bar ${barClass}" style="width: ${percent}%;">
-                                    <span class="bar-value">${value}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            
-            html += `
-                    </div>
-                </div>
-                
-                <table class="results-table">
-                    <tr>
-                        <td>最大差异（最大值与最小值之差）</td>
-                        <td class="value-column">
-                            <div class="value-with-unit">
-                                <span class="value-number">${axialDifference}</span>
-                                <span class="value-unit">W/m·K</span>
-                                <span class="percentage">(差异率: ${axialPercentDiff}%)</span>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            `;
-        }
-        
-        html += `
             </div>
             
             <div class="result-card radial-card">
                 <div class="section-header">
                     <span class="section-icon">↔️</span>
-                    <span class="section-title">径向有效导热系数 (W/m·K)</span>
+                    <span class="section-title">径向弥散系数 (W/m·K)</span>
+                </div>
+                <div class="info-note">
+                    <span class="info-icon">ℹ️</span>
+                    <span class="info-text">此处展示了流体流动引起的弥散导热贡献，不包含静态导热系数。</span>
                 </div>
                 <table class="results-table">
                     <tr>
                         <th>关联式</th>
-                        <th>数值</th>
+                        <th>弥散系数</th>
                     </tr>
         `;
         
         // 获取径向导热系数的最大值和最小值
         const radialValues = Object.entries(results.radial)
-            .filter(([key]) => key !== 'average')
+            .filter(([key]) => key !== 'average' && !key.includes('_disp_only') && !key.includes('_K5'))
             .map(([_, value]) => parseFloat(value));
         const radialMinValue = Math.min(...radialValues);
         const radialMaxValue = Math.max(...radialValues);
         
         // 添加径向导热系数结果
         Object.entries(results.radial).forEach(([key, value]) => {
-            if (key === 'average') {
-                html += `
-                    <tr class="average-row">
-                        <td><strong>平均值</strong></td>
-                        <td class="value-column">
-                            <div class="value-with-unit">
-                                <span class="value-number"><strong>${value}</strong></span>
-                                <span class="value-unit">W/m·K</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            } else {
+            if (key !== 'average' && !key.includes('_disp_only') && !key.includes('_K5')) {
                 let correlationName = '';
                 switch(key) {
-                    case 'yagi_kunii_dispersion_radial':
-                        correlationName = 'Yagi-Kunii径向弥散';
+                    case 'dixon_cresswell_radial':
+                        correlationName = 'Dixon-Cresswell';
                         break;
-                    case 'bauer_schlunder_dispersion':
-                        correlationName = 'Bauer-Schlunder弥散';
-                        break;
-                    case 'peclet_radial':
-                        correlationName = '佩克莱数径向弥散';
-                        break;
+                    default:
+                        correlationName = key;
                 }
                 
-                let indication = '';
-                let badgeClass = '';
-                
-                if (radialValues.length > 1) {
-                    if (parseFloat(value) === radialMinValue) {
-                        indication = '最小值';
-                        badgeClass = 'min-badge';
-                    }
-                    if (parseFloat(value) === radialMaxValue) {
-                        indication = '最大值';
-                        badgeClass = 'max-badge';
-                    }
-                }
+                // 获取K5参数（如有）
+                const k5Value = key === 'dixon_cresswell_radial' && 'dixon_cresswell_K5' in results.radial ? 
+                    results.radial['dixon_cresswell_K5'] : null;
                 
                 html += `
                     <tr>
@@ -1547,8 +1277,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="value-with-unit">
                                 <span class="value-number">${value}</span>
                                 <span class="value-unit">W/m·K</span>
-                                ${indication ? `<span class="result-badge ${badgeClass}">${indication}</span>` : ''}
                             </div>
+                            ${k5Value ? `<div class="parameter-info"><small>K<sub>5</sub>参数: ${k5Value}</small></div>` : ''}
                         </td>
                     </tr>
                 `;
@@ -1557,73 +1287,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         html += `
                 </table>
-        `;
-        
-        // 如果有多个径向结果，添加图表
-        if (radialValues.length > 1) {
-            const radialDifference = (radialMaxValue - radialMinValue).toFixed(4);
-            const radialAvgValue = (radialValues.reduce((a, b) => a + b, 0) / radialValues.length).toFixed(4);
-            const radialPercentDiff = ((radialMaxValue - radialMinValue) / parseFloat(radialAvgValue) * 100).toFixed(2);
-            
-            html += `
-                <div class="result-chart">
-                    <div class="chart-title">径向导热系数结果图示比较</div>
-                    <div class="bar-chart">
-            `;
-            
-            Object.entries(results.radial).forEach(([key, value]) => {
-                if (key !== 'average') {
-                    let correlationName = '';
-                    switch(key) {
-                        case 'yagi_kunii_dispersion_radial':
-                            correlationName = 'Yagi-Kunii径向弥散';
-                            break;
-                        case 'bauer_schlunder_dispersion':
-                            correlationName = 'Bauer-Schlunder弥散';
-                            break;
-                        case 'peclet_radial':
-                            correlationName = '佩克莱数径向弥散';
-                            break;
-                    }
-                    
-                    const percent = (parseFloat(value) / radialMaxValue * 100).toFixed(1);
-                    let barClass = "";
-                    if (parseFloat(value) === radialMinValue) barClass = "min-bar";
-                    if (parseFloat(value) === radialMaxValue) barClass = "max-bar";
-                    
-                    html += `
-                        <div class="chart-row">
-                            <div class="chart-label">${correlationName}</div>
-                            <div class="chart-bar-container">
-                                <div class="chart-bar ${barClass}" style="width: ${percent}%;">
-                                    <span class="bar-value">${value}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            
-            html += `
-                    </div>
-                </div>
-                
-                <table class="results-table">
-                    <tr>
-                        <td>最大差异（最大值与最小值之差）</td>
-                        <td class="value-column">
-                            <div class="value-with-unit">
-                                <span class="value-number">${radialDifference}</span>
-                                <span class="value-unit">W/m·K</span>
-                                <span class="percentage">(差异率: ${radialPercentDiff}%)</span>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            `;
-        }
-        
-        html += `
             </div>
             
             <div class="result-card summary-card">
@@ -1632,8 +1295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="section-title">计算结果总结</span>
                 </div>
                 <div class="calculation-summary">
-                    <p>✨ 计算完成! 轴向有效导热系数平均值: <strong>${results.axial.average}</strong> W/m·K</p>
-                    <p>✨ 径向有效导热系数平均值: <strong>${results.radial.average}</strong> W/m·K</p>
+                    <p>✨ 计算完成! 请查看上方详细结果。</p>
                 </div>
             </div>
         </div>
@@ -1653,292 +1315,58 @@ document.addEventListener('DOMContentLoaded', function() {
         return Number(num).toFixed(4);
     }
     
-    // 添加关联式公式信息弹出框
+    // 添加关联式公式信息弹出框 - 使用事件委托处理所有公式链接，包括动态添加的
     function setupCorrelationInfoLinks() {
-        // 委托事件处理到结果部分
-        resultsSection.addEventListener('click', function(e) {
-            // 检查是否点击了关联式信息链接
-            if (e.target.classList.contains('correlation-info')) {
-                e.preventDefault();
-                
-                const correlationKey = e.target.dataset.correlation;
-                showCorrelationInfo(correlationKey);
-            }
-        });
-    }
-    
-    // 格式化显示的数字
-    function formatNumber(num) {
-        if (num === 0) return "0";
-        
-        const absNum = Math.abs(num);
-        if (absNum < 0.001 || absNum >= 10000) {
-            return num.toExponential(4);
-        } else {
-            return num.toFixed(4);
-        }
-    }
-    
-    // 显示相关性公式信息
-    function showCorrelationInfo(correlationKey) {
-        let title, formulaHtml, description;
-        
-        switch(correlationKey) {
-            case 'yagi_kunii_static':
-                title = "Yagi-Kunii 静态导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_s = k_g [φ + (1-φ)/(1/ψ + k_g/k_p)]
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>k_p - 固体颗粒导热系数 (W/m·K)</li>
-                            <li>φ - 空隙率</li>
-                            <li>ψ - 形状因子 (球形颗粒约为0.9)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Yagi和Kunii提出的静态导热系数模型，考虑流体相和固体相的导热贡献，以及颗粒形状的影响。";
-                break;
-                
-            case 'zbs_static':
-                title = "ZBS (Zehner-Bauer-Schlünder) 静态导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_s = k_g (1 - √(1-φ)) + k_g·√(1-φ)/(1/(K·k_g/k_p) + 2/3)
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>k_p - 固体颗粒导热系数 (W/m·K)</li>
-                            <li>φ - 空隙率</li>
-                            <li>K - 形状影响系数 (球形颗粒约为2.5)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Zehner, Bauer和Schlünder提出的静态导热系数模型，通过考虑颗粒接触点和流体路径改进了传热模拟。该模型对于高导热比(k_p/k_g)的系统非常适用。";
-                break;
-                
-            case 'zbs_static_radiation':
-                title = "ZBS (Zehner-Bauer-Schlünder) 静态导热系数模型（含辐射）";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            $$ k_{eff,f} = k_f[(1-\\sqrt{1-\\varepsilon})\\varepsilon((\\varepsilon-1+1/k_G)^{-1}+k_r) + \\sqrt{1-\\varepsilon}(\\phi k_{s/f}+(1-\\phi)k_c)] $$
-                        </div>
-                        <div class="latex-formula">
-                            $$ k_r = \\frac{4\\sigma T^3d_p}{(2/\\varepsilon_r-1)k_f} $$
-                        </div>
-                    </div>
-                `;
-                description = "ZBS模型的扩展版本，考虑了辐射传热的影响。模型基于Zehner, Bauer和Schlünder的工作，增加了辐射热传递项，使其特别适用于高温环境下的热传导计算，如催化剂床层或高温反应器。";
-                break;
-                
-            case 'yagi_kunii_dispersion_axial':
-                title = "Yagi-Kunii 轴向有效导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_ea = k_s + 0.5·Pe_p·k_g
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_ea - 轴向有效导热系数 (W/m·K)</li>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>Pe_p - 颗粒Peclet数 (Pe_p = Re_p·Pr)</li>
-                            <li>Re_p - 颗粒Reynolds数 (Re_p = ρ·u·d_p/μ)</li>
-                            <li>Pr - Prandtl数 (Pr = C_p·μ/k_g)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Yagi和Kunii提出的轴向有效导热系数模型，考虑静态导热和轴向热弥散两部分的贡献。系数0.5表示轴向热弥散的贡献程度。";
-                break;
-                
-            case 'vortmeyer_dispersion_axial':
-                title = "Vortmeyer 轴向有效导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_ea = k_s + 0.7·Pe_p·k_g
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_ea - 轴向有效导热系数 (W/m·K)</li>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>Pe_p - 颗粒Peclet数 (Pe_p = Re_p·Pr)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Vortmeyer提出的轴向有效导热系数模型，通过调整系数为0.7对Yagi-Kunii模型进行了修正，适用于大多数气固反应器系统。";
-                break;
-                
-            case 'edwards_axial':
-                title = "Edwards 轴向有效导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_ea = k_s + 0.73·Pe_p·k_g·φ/(φ + 0.5(1-φ)·Pe_p)
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_ea - 轴向有效导热系数 (W/m·K)</li>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>φ - 空隙率</li>
-                            <li>Pe_p - 颗粒Peclet数 (Pe_p = Re_p·Pr)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Edwards提出的轴向有效导热系数模型，考虑了空隙率对轴向热弥散的影响，适用范围更广，尤其在较大雷诺数下表现更好。";
-                break;
-                
-            case 'yagi_kunii_dispersion_radial':
-                title = "Yagi-Kunii 径向有效导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_er = k_s + 0.1·Pe_p·k_g
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_er - 径向有效导热系数 (W/m·K)</li>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>Pe_p - 颗粒Peclet数 (Pe_p = Re_p·Pr)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Yagi和Kunii提出的径向有效导热系数模型，基于静态导热系数，加上弥散项的贡献。系数0.1反映了径向弥散通常小于轴向弥散的特性。";
-                break;
-                
-            case 'bauer_schlunder_dispersion':
-                title = "Bauer-Schlünder 径向有效导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_er = k_s + 0.11·Pe_p·k_g·(1/Pe_p + 0.167)·Pr^(1/3)
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_er - 径向有效导热系数 (W/m·K)</li>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>Pe_p - 颗粒Peclet数 (Pe_p = Re_p·Pr)</li>
-                            <li>Pr - Prandtl数 (Pr = C_p·μ/k_g)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "Bauer和Schlünder提出的径向有效导热系数模型，考虑了Prandtl数的影响，适用于高Prandtl数流体的系统。模型的复杂项考虑了不同流动状态下的径向弥散特性。";
-                break;
-                
-            case 'peclet_radial':
-                title = "佩克莱数 径向有效导热系数模型";
-                formulaHtml = `
-                    <div class="formula">
-                        <div class="latex-formula">
-                            k_er = k_s + (Pe_p·k_g/8)·(1/(1+9.7/Pe_p))
-                        </div>
-                    </div>
-                    <div class="formula-legend">
-                        <p>参数说明:</p>
-                        <ul>
-                            <li>k_er - 径向有效导热系数 (W/m·K)</li>
-                            <li>k_s - 静态导热系数 (W/m·K)</li>
-                            <li>k_g - 流体导热系数 (W/m·K)</li>
-                            <li>Pe_p - 颗粒Peclet数 (Pe_p = Re_p·Pr)</li>
-                        </ul>
-                    </div>
-                `;
-                description = "基于佩克莱数的径向有效导热系数模型，将径向弥散贡献表示为Peclet数的函数，适用于从低到高雷诺数的宽广范围。";
-                break;
-                
-            default:
-                title = "未知相关性模型";
-                formulaHtml = "<p>无可用信息</p>";
-                description = "未找到该模型的详细信息。";
-        }
-        
-        // 创建模态框
-        const modal = document.createElement('div');
-        modal.className = 'equation-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h3>${title}</h3>
-                ${formulaHtml}
-                <p class="description">${description}</p>
-                <div class="modal-footer">
-                    <button class="modal-close-btn">关闭</button>
-                </div>
-            </div>
-        `;
-        
-        // 添加到文档中
-        document.body.appendChild(modal);
-        
-        // 添加显示类名后显示模态框
-        setTimeout(() => {
-            modal.classList.add('show');
-        }, 10);
-        
-        // 关闭模态框的点击事件
-        modal.querySelector('.close-modal').addEventListener('click', () => {
-            closeModal(modal);
-        });
-        
-        modal.querySelector('.modal-close-btn').addEventListener('click', () => {
-            closeModal(modal);
-        });
-        
-        // 点击模态框外部关闭
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal(modal);
-            }
-        });
-    }
-    
-    // 关闭模态框
-    function closeModal(modal) {
-        modal.classList.remove('show');
-        setTimeout(() => {
-            document.body.removeChild(modal);
-        }, 300);
-    }
-    
-    // 设置关联式信息链接点击事件
-    function setupCorrelationInfoLinks() {
+        // 使用事件委托，确保即使是动态添加的链接也能触发事件
         document.addEventListener('click', function(e) {
             // 检查是否点击了相关性信息链接
-            if (e.target && e.target.classList.contains('correlation-info')) {
+            if (e.target && e.target.classList.contains('correlation-info') && !e.target._hasEventListener) {
                 e.preventDefault();
+                e.stopPropagation();
+                
                 const correlationKey = e.target.getAttribute('data-correlation');
-                showCorrelationInfo(correlationKey);
+                if (!correlationKey) {
+                    console.error('No correlation key found');
+                    return;
+                }
+                
+                console.log('显示公式信息:', correlationKey);
+                
+                if (!modal) {
+                    console.error('Modal element not found');
+                    return;
+                }
+
+                try {
+                    loadingOverlay?.classList.add('show');
+                    modal.style.display = "block";
+                    modal.classList.add('show');
+                    
+                    // 调用统一的公式展示函数
+                    showFormulaDetails(correlationKey);
+                } catch (error) {
+                    console.error('Error showing formula:', error);
+                } finally {
+                    loadingOverlay?.classList.remove('show');
+                }
             }
         });
     }
     
     // 初始化时设置关联式信息链接
     setupCorrelationInfoLinks();
+    
+    // 手动触发MathJax渲染
+    function renderMathJax() {
+        if (window.MathJax) {
+            window.MathJax.typeset();
+        }
+    }
+
+    function closeModal(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(modal);
+        }, 300);
+    }
 });
