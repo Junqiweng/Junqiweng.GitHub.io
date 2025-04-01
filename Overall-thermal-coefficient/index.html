@@ -6,6 +6,9 @@
     <title>综合传热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://polyfill.io">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <!-- 预加载MathJax -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" as="script" crossorigin="anonymous">
     <!-- 引入全局样式表 -->
     <link rel="stylesheet" href="../global-styles.css">
     <style>
@@ -25,13 +28,11 @@
             opacity: 0;
             transition: visibility 0s linear 0.3s, opacity 0.3s;
         }
-        
         .loading-overlay.show {
             visibility: visible;
             opacity: 1;
             transition-delay: 0s;
         }
-
         .loading-spinner {
             width: 50px;
             height: 50px;
@@ -40,48 +41,247 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         
-        /* 修复公式显示问题，移除滚动条 */
-        .formula-math {
-            overflow-x: visible !important;
-            white-space: nowrap;
-            max-width: none !important;
+        /* 模态框样式优化 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            padding: 20px;
         }
         
-        .latex-formula {
-            white-space: nowrap;
-            overflow: visible;
-            max-width: 100%;
-            margin: 10px 0;
-        }
-        
-        /* 完全移除所有公式相关元素的滚动条 */
-        .formula {
-            overflow: visible !important;
-            max-width: none !important;
-            white-space: nowrap;
-        }
-        
-        /* 确保MathJax元素不显示滚动条 */
-        .MathJax_Display, .MathJax, .mjx-chtml {
-            overflow-x: visible !important;
-            overflow-y: visible !important;
-            max-width: none !important;
-        }
-        
-        /* 公式详情容器不显示滚动条，除了垂直方向 */
-        .formula-detail, .formula-legend {
-            overflow: visible !important;
-        }
-        
-        /* 模态框内容不显示滚动条，除了垂直方向 */
         .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            width: 85%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-close {
+            color: #999;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            transition: color 0.2s;
+        }
+        
+        .modal-close:hover,
+        .modal-close:focus {
+            color: #333;
+            text-decoration: none;
+        }
+        
+        /* 公式显示样式优化 */
+        .formula-section {
+            background-color: #ffffff !important;
+            color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .formula-math {
+            background-color: #ffffff !important;
+            color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+            min-height: 60px;
             overflow-x: visible !important;
+            white-space: normal !important;
+            max-width: 100% !important;
+            margin: 15px 0;
+        }
+        
+        /* 确保MathJax公式显示正确 */
+        .MathJax, .mjx-chtml, .mjx-char, .mjx-n, .mjx-mrow, .mjx-mi,
+        .mjx-mo, .mjx-mn, .mjx-msub, .mjx-msup, .mjx-msubsup {
+            color: #2C3E50 !important;
+            opacity: 1 !important;
+            font-weight: normal !important;
+            display: inline-block !important;
+            font-size: 110% !important;
+        }
+        
+        /* 确保MathJax容器样式不破坏布局 */
+        mjx-container[jax="CHTML"][display="true"] {
+            display: block;
+            margin: 15px 0 !important;
+        }
+        
+        /* 深色模式下的样式调整 */
+        @media (prefers-color-scheme: dark) {
+            .modal-content {
+                background-color: #fefefe !important;
+                color: #333 !important;
+            }
+            .formula-section, .formula-math {
+                background-color: #ffffff !important;
+                color: #333 !important;
+            }
+            .MathJax, .mjx-chtml, .mjx-char, .mjx-n, .mjx-mrow, .mjx-mi,
+            .mjx-mo, .mjx-mn, .mjx-msub, .mjx-msup, .mjx-msubsup {
+                color: #2C3E50 !important;
+            }
+            .modal-close {
+                color: #999;
+            }
+            .modal-close:hover,
+            .modal-close:focus {
+                color: #333;
+            }
+        }
+
+        /* 参数表格样式 */
+        .parameter-table-container {
+            overflow-x: auto;
+        }
+        
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            margin: 10px 0 20px 0;
+        }
+        
+        .parameter-table th,
+        .parameter-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        .parameter-table th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        .parameter-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* 参数符号样式 */
+        .parameter-table code {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 110%;
+            font-style: italic;
+            color: #2C3E50;
+        }
+        
+        /* 理论和适用性部分样式 */
+        .theory-text,
+        .applicability-text {
+            line-height: 1.6;
+        }
+        
+        .theory-text p,
+        .applicability-text p {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        
+        /* 等式部分样式 */
+        .equations-section {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .equation-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .equations-group {
+            flex: 1;
+            min-width: 280px;
+        }
+        
+        .equations-group h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .equation-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background-color: #fff;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .equation-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .equation-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        .equation-item span {
+            flex: 1;
+        }
+        
+        .info-link {
+            margin-left: 10px;
+            font-size: 0.85rem;
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        .info-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* 响应式样式优化 */
+        @media (max-width: 768px) {
+            .equation-list {
+                flex-direction: column;
+            }
+            
+            .equations-group {
+                min-width: 100%;
+            }
+            
+            .parameter-table {
+                font-size: 0.85rem;
+            }
+            
+            .parameter-table th,
+            .parameter-table td {
+                padding: 6px 8px;
+            }
         }
     </style>
     <script>
@@ -91,187 +291,180 @@
         });
     </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <!-- Load MathJax -->
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
     <script>
         window.MathJax = {
+            loader: {
+                load: ['[tex]/ams']
+            },
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true
+                processEscapes: true,
+                packages: {'[+]': ['ams']}
             },
             svg: {
                 fontCache: 'global',
                 scale: 1.1
             },
-            startup: {
-                typeset: false
-            },
             options: {
-                enableMenu: false
+                enableMenu: false,
+                renderActions: {
+                    addMenu: [], // 禁用右键菜单
+                    checkLoading: []
+                }
+            },
+            startup: {
+                typeset: true
             }
         };
     </script>
+    <script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
 </head>
 <body>
+    <!-- 加载指示器 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
     <div class="container">
-        <!-- Header -->
+        <!-- 头部 -->
         <header>
             <div class="header-line"></div>
             <h1>综合传热系数计算器</h1>
-            <h2>✨ 支持固定床反应器总传热系数(U)计算 ✨</h2>
+            <h2>✨ 多孔载体中的传热系数精确计算 ✨</h2>
             <div class="header-line"></div>
             <a href="../index.html" class="back-link">返回主页</a>
         </header>
 
-        <!-- Tabs -->
+        <!-- 标签页 -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="input">输入参数</button>
             <button class="tab-btn" data-tab="results">计算结果</button>
+            <button class="tab-btn" data-tab="details">计算详情</button>
         </div>
 
-        <!-- Main Content -->
+        <!-- 主要内容 -->
         <main>
-            <!-- Input Tab -->
+            <!-- 输入参数标签页 -->
             <div id="input" class="tab-content active">
-                <section class="input-section">
-                    <h3>输入参数 <small style="font-size: 0.8em; color: #666;">(用于计算固定床反应器一维连续模型的总传热系数U)</small></h3>
-                    <!-- 操作条件 -->
-                    <h4>📊 操作条件</h4>
-                    <div class="input-grid">
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体在固定床中的表观流速">🔹 流体表观速度 (m/s):</label>
-                                <input type="number" id="fluid_velocity" value="1" step="0.01" required>
+                <form id="calculation-form">
+                    <section class="input-section">
+                        <h3>流体和固体属性</h3>
+                        <div class="input-grid">
+                            <div class="input-column">
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="流体在空管中的表观流速">🔹 流体表观速度 (m/s):</label>
+                                    <input type="number" id="fluid_velocity" value="1" step="any" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="填充颗粒的等效直径">🔹 颗粒直径 (m):</label>
+                                    <input type="number" id="particle_diameter" value="0.006" step="any" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="床层空隙率">🔹 床层空隙率 ε:</label>
+                                    <input type="number" id="void_fraction" value="0.4" step="any" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="流体热导率">🔹 流体热导率 (W/m·K):</label>
+                                    <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="any" required>
+                                </div>
                             </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="填充颗粒的特征直径">🔹 颗粒直径 (m):</label>
-                                <input type="number" id="particle_diameter" value="0.006" step="0.001" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="床层中的空隙体积与总体积之比">🔹 空隙率 ε:</label>
-                                <input type="number" id="void_fraction" value="0.4" step="0.01" required>
+                            <div class="input-column">
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="固体热导率">🔹 固体热导率 (W/m·K):</label>
+                                    <input type="number" id="solid_thermal_conductivity" value="20" step="any" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="流体密度">🔹 流体密度 (kg/m³):</label>
+                                    <input type="number" id="fluid_density" value="1.225" step="any" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="流体动力黏度">🔹 流体黏度 (Pa·s):</label>
+                                    <input type="number" id="fluid_viscosity" value="1.81e-5" step="any" required>
+                                </div>
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="流体比热容">🔹 流体比热容 (J/kg·K):</label>
+                                    <input type="number" id="fluid_heat_capacity" value="1005" step="any" required>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- 物性参数 -->
-                    <h4>📊 物性参数</h4>
-                    <div class="input-grid">
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的导热系数">🔹 流体导热系数 (W/m·K):</label>
-                                <input type="number" id="fluid_thermal_conductivity" value="0.0257" step="0.0001" required>
+                    <section class="input-section">
+                        <h3>管道参数</h3>
+                        <div class="input-grid">
+                            <div class="input-column">
+                                <div class="input-group">
+                                    <label class="tooltip" data-tooltip="管道内径">🔹 管道内径 (m):</label>
+                                    <input type="number" id="tube_diameter" value="0.05" step="any" required>
+                                </div>
                             </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="固体颗粒的导热系数">🔹 固体颗粒导热系数 (W/m·K):</label>
-                                <input type="number" id="solid_thermal_conductivity" value="20" step="0.1" required>
-                            </div>
-                        </div>
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体密度">🔹 流体密度 (kg/m³):</label>
-                                <input type="number" id="fluid_density" value="1.225" step="0.001" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体动力粘度">🔹 流体粘度 (Pa·s):</label>
-                                <input type="number" id="fluid_viscosity" value="1.81e-5" step="1e-6" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="流体的比热容">🔹 流体比热容 (J/kg·K):</label>
-                                <input type="number" id="fluid_heat_capacity" value="1005" step="0.1" required>
+                            <div class="input-column">
+                                <!-- 预留空间保持布局平衡 -->
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- 几何参数 -->
-                    <h4>📊 几何参数</h4>
-                    <div class="input-grid">
-                        <div class="input-column">
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="管壁传热系数">🔹 管壁传热系数 (W/m²·K):</label>
-                                <input type="number" id="wall_heat_transfer" value="100" step="1" required>
-                            </div>
-                            <div class="input-group">
-                                <label class="tooltip" data-tooltip="反应器管径">🔹 管径 (m):</label>
-                                <input type="number" id="tube_radius" value="0.05" step="0.001" required>
+                    <section class="equations-section">
+                        <h3>计算方法选择</h3>
+                        <div class="equation-list">
+                            <div class="equations-group">
+                                <h4>综合传热系数计算方法</h4>
+                                <label class="equation-item">
+                                    <input type="checkbox" id="complete_model" checked>
+                                    <span>📊 完整模型（基于Bessel修正）</span>
+                                    <a href="#" class="info-link" data-formula="overall_u">ℹ️ 查看公式</a>
+                                </label>
+                                <label class="equation-item">
+                                    <input type="checkbox" id="approximation_model" checked>
+                                    <span>📊 简化近似模型</span>
+                                    <a href="#" class="info-link" data-formula="overall_u_approximation">ℹ️ 查看公式</a>
+                                </label>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                <section class="correlation-section">
-                    <h3>选择有效导热系数计算方程</h3>
-                    <div class="correlation-list">
-                        <div class="correlation-group">
-                            <h4>导热系数关联式</h4>
-                            <label class="correlation-item">
-                            <input type="checkbox" id="zehner_schlunder" checked>
-                            <span>📊 Zehner-Schlünder模型</span>
-                            <small>(考虑颗粒接触传热和辐射效应)</small>
-<a href="#" class="info-link" data-formula="zehner_schlunder">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                            <input type="checkbox" id="krupiczka" checked>
-                            <span>📊 Krupiczka方程</span>
-                            <small>(简化的经验关联式)</small>
-<a href="#" class="info-link" data-formula="krupiczka">ℹ️ 查看公式</a>
-                            </label>
-                            <label class="correlation-item">
-                            <input type="checkbox" id="woodside_messmer" checked>
-                            <span>📊 Woodside-Messmer方程</span>
-                            <small>(基于平行导热通路模型)</small>
-<a href="#" class="info-link" data-formula="woodside_messmer">ℹ️ 查看公式</a>
-                            </label>
-                        </div>
+                    <div class="buttons-section">
+                        <button type="button" id="calculate" class="btn calc-btn">计算</button>
+                        <button type="button" id="clear" class="btn clear-btn">清空</button>
+                        <button type="button" id="reset" class="btn reset-btn">重置</button>
                     </div>
-                </section>
-
-                <section class="buttons-section">
-                    <button id="calculate" class="btn calc-btn">✨ 计算总传热系数 ✨</button>
-                    <button id="clear" class="btn clear-btn">🗑️ 清除输入</button>
-                    <button id="reset" class="btn reset-btn">🔄 重置默认值</button>
-                </section>
+                </form>
             </div>
 
-            <!-- Results Tab -->
+            <!-- 结果标签页 -->
             <div id="results" class="tab-content">
-                <section class="results-section">
-                    <h3>✨ 计算结果详情 ✨</h3>
-                    <div class="results-content">
-                        <div class="result-text">
-                            📊 欢迎使用综合传热系数计算器<br><br>
-                            请输入参数并点击'✨ 计算总传热系数 ✨'按钮开始计算<br><br>
-                            计算结果将显示在这里...<br><br>
-                            注意：您可以点击每个公式旁边的 ℹ️ 按钮查看公式说明
-                        </div>
+                <div class="results-wrapper">
+                    <div id="results-output">
+                        <div class="waiting-message">请在"输入参数"标签页中输入所需参数并计算...</div>
                     </div>
-                </section>
+                </div>
+            </div>
+
+            <!-- 详情标签页 -->
+            <div id="details" class="tab-content">
+                <div class="results-wrapper">
+                    <div id="calculation-details">
+                        <div class="waiting-message">请先进行计算以查看详细过程...</div>
+                    </div>
+                </div>
             </div>
         </main>
-
-        <footer>
-            <p>© 固定床反应器工具集（Junqi）2025</p>
-        </footer>
     </div>
-    <script src="script.js"></script>
-    
-    <!-- Formula Details Modal -->
-    <div id="formulaModal" class="modal">
+
+    <!-- 公式详情模态框 -->
+    <div id="formulaModal" class="modal" hidden>
         <div class="modal-content">
             <span class="modal-close">&times;</span>
-            <div id="formulaDetail" class="formula-detail">
-                <!-- Content will be dynamically inserted here -->
-            </div>
+            <div id="formulaDetailContent"></div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div style="margin-top: 15px; color: var(--primary-color)">加载中...</div>
-    </div>
+    <!-- 页脚 -->
+    <footer>
+        <p>固定床反应器工具集 &copy; 2023 - 综合传热系数计算器</p>
+    </footer>
+
+    <script src="script.js"></script>
 </body>
 </html>
