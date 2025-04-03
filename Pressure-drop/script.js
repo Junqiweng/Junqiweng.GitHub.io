@@ -285,6 +285,22 @@ function calculateDixonWithWall(L, ε, dp, u0, ρ, μ, N, alpha = 0.564) {
     return (L * ρ * u0 ** 2 / dp * (1 - ε) / ε ** 3) * (term1 + term2);
 }
 
+function calculateKTA(L, ε, dp, u0, ρ, μ) {
+    const Re = (ρ * u0 * dp) / μ;
+    const Re_m = Re / (1 - ε);
+    
+    // 第一个公式：摩擦系数计算
+    const fk = 160 / Re_m + 3.0 / Math.pow(Re_m, 0.1);
+    
+    // 第二个公式中的参数
+    const ΔPdp = -L * ρ * u0 * u0 / (dp * ε * ε * ε);
+    
+    // 计算最终压降
+    const dP = ΔPdp * (1 - ε) * fk;
+    
+    return Math.abs(dP); // 返回压降的绝对值
+}
+
 // Formula details data
 const formulaDetails = {
     ergun: {
@@ -438,6 +454,46 @@ const formulaDetails = {
     <div class="condition-item">
         <span class="condition-icon">✓</span>
         <span class="condition-text">可处理不同的颗粒形状</span>
+    </div>
+</div>`
+    },
+    kta: {
+        title: "KTA方程详解",
+        formula: "\\[ \\frac{\\Delta P}{L} = \\frac{\\rho u_0^2(1-\\varepsilon)}{\\varepsilon^3 d_p} \\cdot \\left( \\frac{160}{Re_m} + \\frac{3.0}{Re_m^{0.1}} \\right), \\quad \\text{其中} \\quad Re_m = \\frac{\\rho u_0 d_p}{\\mu(1-\\varepsilon)} \\]",
+        parameters: [
+            ["L", "床层高度", "固定床反应器中填料的总高度"],
+            ["d_p", "颗粒直径", "填充颗粒的等效直径"],
+            ["ε", "空隙率", "床层中空隙体积与总体积之比"],
+            ["μ", "流体粘度", "流体的动力粘度"],
+            ["u_0", "流体表观速度", "基于空管的表观流速"],
+            ["ρ", "流体密度", "操作条件下流体的密度"],
+            ["Re_m", "修正雷诺数", "考虑空隙率影响的修正雷诺数"]
+        ],
+        theory: `<p><strong>KTA方程</strong>是由德国核安全标准委员会(Kerntechnischer Ausschuss, KTA)推荐的固定床压降关联式。</p>
+        <p>该方程的主要特点：</p>
+        <ul>
+            <li>方程中的摩擦阻力系数表达式直接合并在主方程中，考虑了层流区和湍流区的平滑过渡</li>
+            <li>通过修正雷诺数(Re<sub>m</sub>)概念描述颗粒周围的实际流动状态</li>
+            <li>方程结构简单但预测精度高，特别适用于工程应用</li>
+            <li>在高雷诺数区域具有良好的预测性能</li>
+        </ul>
+        <p>方程中括号内的第一项(160/Re<sub>m</sub>)代表层流贡献，第二项(3.0/Re<sub>m</sub><sup>0.1</sup>)代表湍流贡献。</p>`,
+        applicability: `<div class="applicability-conditions">
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">适用于雷诺数在1-10000范围内</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">球形或近似球形颗粒</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">空隙率在0.36-0.42之间最准确</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✓</span>
+        <span class="condition-text">特别适用于核工业应用场景</span>
     </div>
 </div>`
     }
@@ -734,7 +790,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 {id: 'ergun', name: 'Ergun方程', func: () => calculateErgun(L, ε, dp, u0, ρ, μ)},
                 {id: 'eisfeld_schnitzlein', name: 'Eisfeld-Schnitzlein方程', func: () => calculateEisfeldSchnitzlein(L, ε, dp, u0, ρ, μ, D, shape)},
                 {id: 'dixon_no_wall', name: 'Dixon方程(无壁面效应)', func: () => calculateDixonNoWall(L, ε, dp, u0, ρ, μ)},
-                {id: 'dixon_with_wall', name: 'Dixon方程(有壁面效应)', func: () => calculateDixonWithWall(L, ε, dp, u0, ρ, μ, N)}
+                {id: 'dixon_with_wall', name: 'Dixon方程(有壁面效应)', func: () => calculateDixonWithWall(L, ε, dp, u0, ρ, μ, N)},
+                {id: 'kta', name: 'KTA方程', func: () => calculateKTA(L, ε, dp, u0, ρ, μ)}
             ];
 
             // Check if at least one equation is selected
