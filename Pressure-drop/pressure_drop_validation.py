@@ -15,6 +15,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from prettytable import PrettyTable
 
 
 class PressureDropCalculator:
@@ -195,84 +196,6 @@ class PressureDropCalculator:
         return results
 
 
-def run_case_study(case_params, case_name="默认工况"):
-    """
-    运行工况研究，计算给定参数下的压降
-
-    参数:
-        case_params (dict): 工况参数字典
-        case_name (str): 工况名称
-
-    返回值:
-        pd.DataFrame: 计算结果的DataFrame
-    """
-    calculator = PressureDropCalculator(**case_params)
-    results = calculator.calculate_all()
-
-    # 创建结果DataFrame
-    df = pd.DataFrame(
-        {
-            "方程": list(results.keys()),
-            "压降 (Pa)": list(results.values()),
-            "压降 (kPa)": [p / 1000 for p in results.values()],
-        }
-    )
-
-    # 计算方差和差异
-    min_val = df["压降 (kPa)"].min()
-    max_val = df["压降 (kPa)"].max()
-    mean_val = df["压降 (kPa)"].mean()
-
-
-    print("\n计算结果:")
-    print(df.to_string(index=False))
-
-    print(f"\n最小压降: {min_val:.4f} kPa")
-    print(f"最大压降: {max_val:.4f} kPa")
-    print(f"平均压降: {mean_val:.4f} kPa")
-    print(
-        f"最大差异: {max_val - min_val:.4f} kPa (差异率: {(max_val - min_val)/mean_val*100:.2f}%)"
-    )
-
-    # 绘制条形图表示结果
-    plt.figure(figsize=(10, 6))
-    colors = ["#3498db", "#2ecc71", "#e74c3c", "#f39c12", "#9b59b6"]
-
-    # 创建英文方程名映射
-    equation_name_map = {
-        "Ergun方程": "Ergun",
-        "Eisfeld-Schnitzlein方程": "Eisfeld-Schnitzlein",
-        "Dixon方程(无壁面效应)": "Dixon (No Wall)",
-        "Dixon方程(有壁面效应)": "Dixon (With Wall)",
-        "KTA方程": "KTA",
-    }
-
-    # 使用英文标签
-    english_labels = [equation_name_map.get(eq, eq) for eq in df["方程"]]
-
-    bars = plt.bar(english_labels, df["压降 (kPa)"], color=colors)
-
-    # 添加数据标签
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(
-            bar.get_x() + bar.get_width() / 2.0,
-            height + 0.05,
-            f"{height:.2f}",
-            ha="center",
-            va="bottom",
-        )
-
-    plt.xlabel("Calculation Method")
-    plt.ylabel("Pressure Drop (kPa)")
-    plt.title("Comparison of Pressure Drop Results by Different Equations")
-    plt.xticks(rotation=15, ha="right")
-    plt.tight_layout()
-    plt.grid(axis="y", linestyle="--", alpha=0.7)
-    plt.show()
-    return df
-
-
 def main():
     """主函数"""
     # 默认工况参数
@@ -287,10 +210,42 @@ def main():
         "particle_shape": "球形",  # 颗粒形状
     }
 
-    # 运行默认工况
-    run_case_study(default_params, "默认工况")
+    # 初始化计算器
+    calculator = PressureDropCalculator(**default_params)
 
-    print("\n计算完成！默认工况的结果已保存到 default_case_results.png")
+    # 计算所有关联式的结果
+    results = calculator.calculate_all()
+
+    # 创建结果DataFrame
+    df = pd.DataFrame(
+        {
+            "方程": list(results.keys()),
+            "压降 (Pa)": list(results.values()),
+            "压降 (kPa)": [p / 1000 for p in results.values()],
+        }
+    )
+
+    # 格式化数值以保持一致的小数位数
+    df["压降 (Pa)"] = [f"{val:.4f}" for val in df["压降 (Pa)"]]
+    df["压降 (kPa)"] = [f"{val:.4f}" for val in df["压降 (kPa)"]]
+
+    # 使用prettytable创建美观的表格
+    pt = PrettyTable()
+    pt.field_names = df.columns.tolist()
+
+    # 添加数据行
+    for _, row in df.iterrows():
+        pt.add_row(row.tolist())
+
+    # 设置表格样式
+    pt.align = "c"  # 所有列居中对齐
+    pt.border = True
+    pt.header = True
+    pt.padding_width = 2
+
+    # 显示计算结果
+    print("\n计算结果:")
+    print(pt)
 
 
 if __name__ == "__main__":
