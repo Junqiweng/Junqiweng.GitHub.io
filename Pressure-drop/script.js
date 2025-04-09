@@ -580,7 +580,11 @@ async function showFormulaDetails(formulaId) {
 
     detailContent.innerHTML = content;
     if (window.MathJax) {
-        MathJax.typesetPromise([detailContent]).catch(error => {
+        MathJax.typesetPromise([detailContent]).then(() => {
+            detailContent.querySelectorAll('.formula-math.loading').forEach(el => {
+                el.classList.remove('loading');
+            });
+        }).catch(error => {
             console.error('MathJax typesetting error:', error);
         });
     }
@@ -635,9 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     modal.style.display = "block";
                     await showFormulaDetails(formulaId);
-                    if (window.MathJax) {
-                        await MathJax.typesetPromise([modal]);
-                    }
+                    // 移除重复的 MathJax 渲染调用，避免加载卡死
                 } catch (error) {
                     console.error('Error showing formula details:', error);
                 } finally {
