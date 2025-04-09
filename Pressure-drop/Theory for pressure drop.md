@@ -94,13 +94,13 @@ $B = \frac{A_w}{B_w}$，其中 $B_w = (k_1 \cdot (\frac{d_p}{D})^2 + k_2)^2$ 是
 
 这些参数随颗粒形状而变化，计算器中已内置不同形状的参数值。
 
-**Dixon方程中的参数：** 
+**Dixon方程中的参数：**
 
 $Re_m = \frac{Re_p}{1-\varepsilon}$ 是修正雷诺数，考虑了空隙率的影响
 
 Dixon方程（有壁面效应）中，$\alpha = 0.564$ 是描述壁面效应强度的系数，由大量实验数据拟合得到
 
-**KTA方程中的参数：** 
+**KTA方程中的参数：**
 
 $Re_m = \frac{\rho u_0 d_p}{\mu(1-\varepsilon)}$ 是修正雷诺数
 
@@ -235,6 +235,3 @@ KTA方程的特点是结构简单，但预测精度高，尤其在工程应用�
 [^3]: Dixon A G. General correlation for pressure drop through randomly‐packed beds of spheres with negligible wall effects[J]. AIChE Journal, 2023, 69(6): e18035.
 [^4]: Dixon A G. Are there wall effects on pressure drop through randomly packed beds of spherical catalyst particles?[J]. AIChE Journal, 2024, 70(1): e18272.
 [^5]: Zheng Y. Reactor core design of high-temperature gascooled reactors, Part 3: loss of pressure through friction in pebble bed cores[J]. KTA3102, 1981, 3.
-
-
-
