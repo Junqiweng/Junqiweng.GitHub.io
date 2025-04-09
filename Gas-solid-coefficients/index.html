@@ -100,6 +100,13 @@
         .modal-content {
             overflow-x: visible !important;
         }
+        /* 统一MathJax字体样式 */
+        .MathJax, .mjx-chtml, .mjx-char, .mjx-mrow, .mjx-mi, .mjx-mo, .mjx-mn, .mjx-msub, .mjx-msup, .mjx-msubsup {
+            color: #1E293B !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            font-style: normal !important;
+            font-weight: normal !important;
+        }
     </style>
     <script>
         // Loading indicator management
@@ -121,30 +128,13 @@
             },
             svg: {
                 fontCache: 'global',
-                scale: 1.5
+                scale: 1.2
             },
             startup: {
                 typeset: true
             },
             options: {
                 enableMenu: false
-            },
-            chtml: {
-                scale: 1.5,
-                mtextFontInherit: false,
-                matchFontHeight: true
-            },
-            "HTML-CSS": {
-                linebreaks: { automatic: true },
-                scale: 1.5,
-                styles: {
-                    ".MathJax": {
-                        color: "#000 !important"
-                    },
-                    ".MathJax_Display": {
-                        color: "#000 !important"
-                    }
-                }
             }
         };
     </script>
