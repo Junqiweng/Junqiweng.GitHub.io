@@ -302,6 +302,34 @@ header::before {
     letter-spacing: 0.5px;
 }
 
+/* 统一按钮风格别名 */
+.btn-primary {
+    background: var(--button-primary);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px -1px rgba(99, 102, 241, 0.3);
+}
+
+.btn-secondary {
+    background: var(--button-secondary);
+    color: white;
+}
+.btn-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(236, 72, 153, 0.3);
+}
+
+.btn-reset {
+    background: var(--button-reset);
+    color: white;
+}
+.btn-reset:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(107, 114, 128, 0.3);
+}
+
 .btn::after {
     content: '';
     position: absolute;
