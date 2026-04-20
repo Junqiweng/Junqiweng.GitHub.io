@@ -1,8 +1,9 @@
 // Format number to scientific notation if needed
 function formatNumber(num) {
     if (num === 0) return '0';
+    if (!isFinite(num) || isNaN(num)) return '无效数字';
     const absNum = Math.abs(num);
-    if (absNum < 0.01 || absNum >= 10000) {
+    if (absNum < 0.001 || absNum >= 10000) {
         return num.toExponential(4);
     }
     return num.toFixed(4);
@@ -398,7 +399,8 @@ const formulaDetails = {
             <li>方程包含了从层流到湍流的平滑过渡项</li>
             <li>适用于更广泛的雷诺数范围，能够准确预测不同流动条件下的压降</li>
         </ul>
-        <p>修正雷诺数定义为：Re<sub>m</sub> = Re/(1-ε)，其中Re为常规雷诺数</p>`,
+        <p>修正雷诺数定义为：Re<sub>m</sub> = Re/(1-ε)，其中Re为常规雷诺数</p>
+        <p><strong>⚠️ 版本注意：</strong>本实现过渡项分母取 Re<sub>m</sub>+52，但 2023 AIChE 公开会议摘要出现 Re<sub>m</sub>+60.0 的版本。两者在低 Re 区域存在差异，最终以正式期刊原文为准（Dixon, AIChE J. 2023, e18035）。</p>`,
         applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -554,44 +556,8 @@ function renderFormulaReferences(formulaId) {
             </div>`;
 }
 
-let mathJaxLoadPromise = null;
-
-function ensureMathJaxReady(timeoutMs = 5000) {
-    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        return Promise.resolve(window.MathJax);
-    }
-
-    if (mathJaxLoadPromise) {
-        return mathJaxLoadPromise;
-    }
-
-    mathJaxLoadPromise = new Promise((resolve) => {
-        if (!document.getElementById('MathJax-script')) {
-            const script = document.createElement('script');
-            script.id = 'MathJax-script';
-            script.async = true;
-            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-            script.onerror = () => resolve(null);
-            document.head.appendChild(script);
-        }
-
-        const startedAt = Date.now();
-        const timer = setInterval(() => {
-            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-                clearInterval(timer);
-                resolve(window.MathJax);
-            } else if (Date.now() - startedAt > timeoutMs) {
-                clearInterval(timer);
-                resolve(null);
-            }
-        }, 50);
-    });
-
-    return mathJaxLoadPromise;
-}
-
 // Function to show formula details
-async function showFormulaDetails(formulaId) {
+function showFormulaDetails(formulaId) {
     const formula = formulaDetails[formulaId];
     if (!formula) return;
 
@@ -679,24 +645,7 @@ async function showFormulaDetails(formulaId) {
     );
     if (firstFocusable) firstFocusable.focus();
 
-    const renderMath = async () => {
-        const mathJax = await ensureMathJaxReady();
-        if (mathJax) {
-            try {
-                await mathJax.typesetPromise([detailContent]);
-            } catch (error) {
-                console.error('MathJax typesetting error:', error);
-            }
-        }
-
-        detailContent.querySelectorAll('.formula-math.loading').forEach(el => el.classList.remove('loading'));
-    };
-
-    if (typeof window.requestIdleCallback === 'function') {
-        window.requestIdleCallback(renderMath, { timeout: 1500 });
-    } else {
-        window.setTimeout(renderMath, 300);
-    }
+    window.scheduleMathJaxTypeset(detailContent);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -738,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Event delegation for formula info links
-    document.addEventListener('click', async (e) => {
+    document.addEventListener('click', (e) => {
         if (e.target.closest('.info-link, .equation-info')) {
             e.preventDefault();
             e.stopPropagation();
@@ -746,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formulaId = link.dataset.formula;
             if (formulaId) {
                 try {
-                    await showFormulaDetails(formulaId);
+                    showFormulaDetails(formulaId);
                 } catch (error) {
                     console.error('Error showing formula details:', error);
                 }

@@ -1,8 +1,9 @@
 // Format number to scientific notation if needed
 function formatNumber(num) {
     if (num === 0) return '0';
+    if (!isFinite(num) || isNaN(num)) return '无效数字';
     const absNum = Math.abs(num);
-    if (absNum < 0.01 || absNum >= 10000) {
+    if (absNum < 0.001 || absNum >= 10000) {
         return num.toExponential(4);
     }
     return num.toFixed(4);
@@ -310,6 +311,11 @@ function calculateSatoModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ) {
         throw new Error('Sato关联式无法计算：Martinelli参数X必须为正有限值。');
     }
 
+    // Sato et al. 适用范围：0.1 < X < 20（来源：Walas, Chemical Process Equipment, 引用 Sato 1973）
+    if (X < 0.1 || X > 20) {
+        console.warn(`Sato关联式：Martinelli参数 X=${X.toFixed(3)} 超出适用范围 0.1–20，结果仅供参考。`);
+    }
+
     // Sato et al. 常用写法以 φ_L 表示液相两相乘子，压降使用 φ_L^2。
     const φL = 1.30 + 1.85 * Math.pow(X, -0.85);
     return ΔPL * φL * φL;
@@ -418,7 +424,8 @@ const formulaDetails = {
             <li>通过马丁内利参数X建立两相流压降与单相压降的关系</li>
             <li>引入修正系数φ_L^2来考虑两相间的相互作用</li>
         </ul>
-        <p>这是涓流床压降计算的基础模型，虽然简单但在许多情况下提供较好的估计。</p>`,
+        <p>这是涓流床压降计算的基础模型，虽然简单但在许多情况下提供较好的估计。</p>
+        <p><strong>⚠️ Chisholm系数C的使用限制：</strong>本实现固定取 C=20，这是 Chisholm (1967) 对管内<strong>湍流-湍流</strong>两相流的推荐值。对于涓流床中液相层流（Re<sub>L</sub>&lt;2000）或气相层流情形，C 应分别取10（液层/气湍）、12（液湍/气层）或5（层流-层流），使用固定C=20可能在低流速工况引入误差。</p>`,
         applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>

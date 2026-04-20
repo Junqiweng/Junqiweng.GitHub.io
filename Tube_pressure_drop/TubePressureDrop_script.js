@@ -1,8 +1,9 @@
 // Format number to scientific notation if needed
 function formatNumber(num) {
     if (num === 0) return '0';
+    if (!isFinite(num) || isNaN(num)) return '无效数字';
     const absNum = Math.abs(num);
-    if (absNum < 0.01 || absNum >= 10000) {
+    if (absNum < 0.001 || absNum >= 10000) {
         return num.toExponential(4);
     }
     return num.toFixed(4);
@@ -777,7 +778,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="method-card">
                             <div class="method-header">过渡流条件 (2300 ≤ Re < 4000)</div>
-                            <p>在过渡区域，摩擦因子没有精确公式，本计算器采用线性插值方法：</p>
+                            <p>在过渡区域，摩擦因子没有唯一标准公式（流动本身不稳定），本计算器采用线性插值作为<strong>工程近似</strong>：</p>
                             <div class="formula-box">
                                 <div class="formula">
                                     $$f = f_{层流} \\cdot (1 - x) + f_{湍流} \\cdot x, \\quad x = \\frac{Re - 2300}{4000 - 2300}$$
@@ -796,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         $$f = \\frac{0.316}{Re^{0.25}}$$
                                     </div>
                                 </div>
-                                <p>这是Blasius公式，适用于相对光滑的管道和中等雷诺数。</p>
+                                <p>这是Blasius公式，适用于相对光滑的管道和中等雷诺数（Re &lt; 10<sup>5</sup>）。注意：系数精确值为0.3164，此处取0.316为工程近似。</p>
                             </div>
                             
                             <div class="sub-method">
@@ -842,6 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="formula-description">
                         <p>管道系统中，除了沿程损失外，局部构件（弯头、阀门、收缩扩张等）也会产生额外的压降，称为局部损失：</p>
+                        <p><strong>⚠️ 工程估算说明：</strong>本模块K值取经验近似值，实际K值随雷诺数、几何细节（弯头曲率半径、收缩角度、锐边/圆角）而显著变化。建议仅用于工程估算，精确设计应参考专业手册（如 Crane TP-410 或 ASHRAE）的实测K值。</p>
                     </div>
                     <div class="formula-box">
                         <div class="formula">

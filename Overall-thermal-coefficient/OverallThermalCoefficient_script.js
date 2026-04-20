@@ -24,24 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('calculation-form');
     const loadingOverlay = document.getElementById('loading-overlay');
 
-    // --- Initial Check for Modal Elements ---
-    if (!modal) {
-        console.error("ERROR: Modal element (#formulaModal) not found!");
-    } else {
-        console.log("LOG: Modal element (#formulaModal) found:", modal);
-    }
-    if (!modalContent) {
-        console.error("ERROR: Modal content element (#formulaDetailContent) not found!");
-    } else {
-         console.log("LOG: Modal content element (#formulaDetailContent) found:", modalContent);
-    }
-     if (!closeModalBtn) {
-        console.error("ERROR: Modal close button (.modal-close within #formulaModal) not found!");
-    } else {
-         console.log("LOG: Modal close button (.modal-close) found:", closeModalBtn);
-    }
-    // -----------------------------------------
-
     // Initial default values (example)
     const defaultValues = {
         fluidVelocity: 1,
@@ -56,20 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Utility Functions ---
-    function formatNumber(num, precision = 3) { // Allow specifying precision
+    function formatNumber(num) {
         if (num === 0) return '0';
-        if (isNaN(num) || !isFinite(num)) return '无效数字'; // Handle non-numeric results
+        if (!isFinite(num) || isNaN(num)) return '无效数字';
         const absNum = Math.abs(num);
-        if (absNum < 0.0001 || absNum >= 100000) { // Adjust thresholds if needed
-            return num.toExponential(precision > 0 ? precision -1 : 2); // Exponential notation with precision
+        if (absNum < 0.001 || absNum >= 10000) {
+            return num.toExponential(4);
         }
-        // Adjust decimal places based on magnitude for better readability
-        let fixedPrecision = precision;
-        if (absNum >= 100) fixedPrecision = Math.max(0, precision - 2);
-        else if (absNum >= 10) fixedPrecision = Math.max(0, precision - 1);
-        else if (absNum < 1) fixedPrecision = precision + 1; // More precision for small numbers < 1
-
-        return num.toFixed(fixedPrecision);
+        return num.toFixed(4);
     }
 
     function showLoading() {
@@ -120,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
              console.error("ERROR: Cannot hide modal, modal element is missing.");
              return;
         }
-        console.log("LOG: Hiding modal.");
         modal.style.display = 'none';
         modal.setAttribute('hidden', '');
         modalContent.innerHTML = ''; // Clear content
@@ -187,8 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 { symbol: "C_{p,f}", description: "流体比热容", unit: "J/(kg·K)" }
             ],
             theory: `
-                <p>该模型基于能量守恒原理，结合辐射和对流传热机制，使用修正贝塞尔函数来描述固定床中热量从中心向壁面的传递过程。完整模型考虑了壁面效应和径向导热的非均匀性，特别适用于管径与颗粒直径比较小的情况。</p>
-                <p>公式中的贝塞尔函数修正项 \(\\frac{I_0(N_w)}{N_w I_1(N_w)}\) 考虑了由于壁面效应导致的温度分布非线性。</p>
+                <p>该模型基于能量守恒原理，使用修正贝塞尔函数来描述固定床中热量从中心向壁面的传递过程。完整模型考虑了壁面效应和径向导热的非均匀性，特别适用于管径与颗粒直径比较小的情况。</p>
+                <p>公式中的贝塞尔函数修正项 \(\\frac{I_0(N_w)}{N_w I_1(N_w)}\) 考虑了由于壁面效应导致的温度分布非线性。当 N<sub>w</sub> 较大时（高 h<sub>w</sub> 或低 k<sub>er</sub>），Bessel 比值偏离 1/2，此时必须使用完整模型。</p>
+                <p><strong>⚠️ 注意：</strong>①本模块静态导热系数 k<sub>e</sub> 使用内部简化近似，非标准 ZBS 模型。②本模块计算的 U 是<strong>床层内侧</strong>等效总传热系数，不含管壁导热热阻和外侧换热，不等同于整个换热器总传热系数 U<sub>overall</sub>。</p>
             `,
             applicability: `
                 <p>该模型适用于以下条件：</p>
@@ -237,8 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 { symbol: "C_{p,f}", description: "流体比热容", unit: "J/(kg·K)" }
             ],
             theory: `
-                <p>简化近似模型是对完整模型的简化版本，将贝塞尔函数修正项简化为常数值 1/2，即 \(\\frac{I_0(N_w)}{N_w I_1(N_w)} \\approx \\frac{1}{2}\)。这种简化在管径与颗粒直径比较大时是合理的近似。</p>
-                <p>这种简化使计算变得更加简单，同时在大多数工程应用中保持了足够的精度。</p>
+                <p><strong>工程近似模型</strong>是对完整 Bessel 函数模型的简化版本，将 \(\\frac{I_0(N_w)}{N_w I_1(N_w)}\) 近似为 \(\\frac{1}{2}\)，即 \(\\frac{D_t}{2k_{er}} \\cdot \\frac{I_0(N_w)}{N_w I_1(N_w)} \\approx \\frac{D_t}{4k_{er}}\)。这种简化在 N<sub>w</sub> 较小时合理（N<sub>w</sub> → 0 时 Bessel 项趋近 1/2）。</p>
+                <p>这种简化使计算更简单，但 N<sub>w</sub> > 2 时误差增大，建议使用完整模型。</p>
+                <p><strong>⚠️ 注意：</strong>①静态有效导热系数 k<sub>e</sub> 使用了内部简化近似（非标准 ZBS 模型），结果精度弱于 <em>Thermal-conductivity</em> 模块。②本模块计算的 U 是床层内侧等效总传热系数，不含管壁导热热阻和外侧换热热阻，不等同于整个换热器的总传热系数。</p>
             `,
             applicability: `
                 <p>该简化模型最适用于以下条件：</p>
@@ -458,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return { overall_u: NaN, Re_p, Pr, Nu_w, h_w: NaN, k_e: NaN, k_er: NaN, N_w: NaN };
         }
 
-        // 计算静态有效导热系数 k_e
+        // 计算静态有效导热系数 k_e（内部简化近似，非标准ZBS模型，仅用于此模块快速估算）
         const ks_kf_ratio = solidThermalConductivity / fluidThermalConductivity;
         const k_e = fluidThermalConductivity * (voidFraction + (1 - voidFraction) * ks_kf_ratio / (1 + 0.1 * ks_kf_ratio));
         if (!isFinite(k_e) || k_e < 0) {
@@ -549,15 +526,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return { overall_u: NaN, Re_p, Pr, Nu_w, h_w: NaN };
         }
 
-        // 计算静态有效导热系数 k_e
+        // 计算静态有效导热系数 k_e（内部简化近似，非标准ZBS模型，仅用于此模块快速估算）
         const ks_kf_ratio = solidThermalConductivity / fluidThermalConductivity;
         const k_e = fluidThermalConductivity * (voidFraction + (1 - voidFraction) * ks_kf_ratio / (1 + 0.1 * ks_kf_ratio));
-        
+
         // 计算有效径向导热系数 k_er：静态项 + Dixon-Cresswell 型径向热弥散项
         const K5 = 8.65 * (1 + 19.4 * Math.pow(particleDiameter / tubeDiameter, 2));
         const k_er = k_e + fluidThermalConductivity * Re_p * Pr / K5;
 
-        // 简化模型，忽略贝塞尔函数项
+        // 工程近似：以 Dt/(4*k_er) 替代 Bessel 函数径向热阻（适用于 N_w 较小时）
         const radial_resistance = tubeDiameter / (4 * k_er);
         const wall_resistance = 1 / h_w;
         const overall_u = 1 / (wall_resistance + radial_resistance);

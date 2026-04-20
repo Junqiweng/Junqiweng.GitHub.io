@@ -345,14 +345,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 ["D_AB", "分子扩散系数", "描述组分在流体中的扩散能力"],
                 ["d_p", "颗粒直径", "填充颗粒的特征尺寸"]
             ],
-            theory: `<p><strong>Froessling关联式</strong>是传质研究中的一个历史性关联式，实际上Ranz-Marshall关联式是在此基础上发展而来的。</p>
+            theory: `<p><strong>Froessling关联式</strong>是传质研究中的一个历史性关联式，Ranz-Marshall关联式（1952）即从此发展而来。</p>
             <p>关键特点：</p>
             <ul>
-                <li>形式与Ranz-Marshall相同，但理论基础和推导过程略有不同</li>
-                <li>更强调单颗粒在流体中的传质行为</li>
+                <li>形式与Ranz-Marshall完全相同：Sh = 2 + 0.6Re<sup>0.5</sup>Sc<sup>1/3</sup></li>
+                <li>更强调单颗粒在无限流体中的传质行为，不是密集固定床推荐式</li>
                 <li>通常用于单颗粒蒸发、燃烧等研究</li>
             </ul>
-            <p>Froessling在1938年最早提出这一关系，对后续传质理论有深远影响。</p>`,
+            <p>Froessling在1938年最早提出这一关系，对后续传质理论有深远影响。</p>
+            <p><strong>⚠️ 代码说明：</strong>本模块中 Froessling 与 Ranz-Marshall 使用相同的计算式。若要区分密集填充床传质，建议优先选用 Wakao-Funazkri 关联式。</p>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -467,9 +468,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <li>没有常数项，主要适用于湍流区域</li>
                 <li>系数0.037略高于Dittus-Boelter的0.023</li>
                 <li>Prandtl数指数固定为1/3，不区分加热/冷却</li>
-                <li>由于简化，在原始公式中忽略了一些修正因子</li>
                 <li>仅保留为管内流数量级对照，不建议用于固定床颗粒外传热设计</li>
             </ul>
+            <p><strong>⚠️ 简化说明：</strong>Hausen原式含 (d<sub>p</sub>/L)<sup>2/3</sup> 修正项，本实现中该项已简化为1（忽略）。在短管/小粒径工况（d<sub>p</sub>/L 较大时），完整式结果将偏低。如需精确计算，请参考原文公式。</p>
             <p>本页若启用该项，应只作为参考，不参与固定床颗粒外传热的推荐设计值。</p>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
@@ -603,11 +604,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 格式化数字显示函数
         const formatNumber = (num) => {
-            if (Math.abs(num) < 0.001 || Math.abs(num) >= 10000) {
-                return num.toExponential(3);
-            } else {
-                return parseFloat(num.toFixed(4)).toString();
+            if (num === 0) return '0';
+            if (!isFinite(num) || isNaN(num)) return '无效数字';
+            const absNum = Math.abs(num);
+            if (absNum < 0.001 || absNum >= 10000) {
+                return num.toExponential(4);
             }
+            return num.toFixed(4);
         };
         
         // 生成结果HTML

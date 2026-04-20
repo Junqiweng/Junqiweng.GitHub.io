@@ -464,20 +464,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // 格式化数字函数
             function formatNumber(num) {
                 if (num === 0) return "0";
-                
-                // 科学计数法表示
-                if (Math.abs(num) < 0.001 || Math.abs(num) >= 10000) {
-                    return num.toExponential(3);
-                }
-                
-                // 小数位数动态调整
+                if (!isFinite(num) || isNaN(num)) return '无效数字';
                 const absNum = Math.abs(num);
-                if (absNum < 0.01) return num.toFixed(5);
-                if (absNum < 0.1) return num.toFixed(4);
-                if (absNum < 1) return num.toFixed(3);
-                if (absNum < 10) return num.toFixed(2);
-                if (absNum < 100) return num.toFixed(1);
-                return num.toFixed(0);
+                if (absNum < 0.001 || absNum >= 10000) {
+                    return num.toExponential(4);
+                }
+                return num.toFixed(4);
             }
             
             // 查找最大和最小值

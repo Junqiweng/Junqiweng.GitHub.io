@@ -1324,11 +1324,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 添加格式化数字的函数
     function formatNumber(num) {
         if (num === 0) return '0';
+        if (!isFinite(num) || isNaN(num)) return '无效数字';
         const absNum = Math.abs(num);
-        if (absNum < 0.01 || absNum >= 10000) {
-            return Number(num).toExponential(4);
+        if (absNum < 0.001 || absNum >= 10000) {
+            return num.toExponential(4);
         }
-        return Number(num).toFixed(4);
+        return num.toFixed(4);
     }
     
     // 添加关联式公式信息弹出框 - 使用事件委托处理所有公式链接，包括动态添加的

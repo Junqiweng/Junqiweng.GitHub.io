@@ -1,8 +1,9 @@
 // Format number to scientific notation if needed
 function formatNumber(num) {
     if (num === 0) return '0';
+    if (!isFinite(num) || isNaN(num)) return '无效数字';
     const absNum = Math.abs(num);
-    if (absNum < 0.01 || absNum >= 10000) {
+    if (absNum < 0.001 || absNum >= 10000) {
         return num.toExponential(4);
     }
     return num.toFixed(4);
@@ -647,32 +648,6 @@ function calculateDixonCresswell(fluidVelocity, particleDiameter, fluidPrandtl, 
     const hw = 0.23 * Math.pow(reynoldsNumber, 0.7) 
                * Math.pow(fluidPrandtl, 0.33) 
                * Math.pow(ratio, -0.2) 
-               * (fluidThermalConductivity / particleDiameter);
-    return hw;
-}
-
-function calculateDeWaschFroment(fluidVelocity, particleDiameter, fluidPrandtl, reactorDiameter, fluidThermalConductivity, fluidDensity, fluidViscosity) {
-    const massFlux = fluidDensity * fluidVelocity;
-    const reynoldsNumber = (particleDiameter * massFlux) / fluidViscosity;
-    
-    const ratio = reactorDiameter / particleDiameter;
-
-    const hw = 0.31 * Math.pow(reynoldsNumber, 0.93) 
-               * Math.pow(fluidPrandtl, 0.33) 
-               * Math.pow(ratio, -0.5) 
-               * (fluidThermalConductivity / particleDiameter);
-    return hw;
-}
-
-function calculateSpecchia(fluidVelocity, particleDiameter, fluidPrandtl, reactorDiameter, fluidThermalConductivity, fluidDensity, fluidViscosity) {
-    const massFlux = fluidDensity * fluidVelocity;
-    const reynoldsNumber = (particleDiameter * massFlux) / fluidViscosity;
-    
-    const ratio = reactorDiameter / particleDiameter;
-
-    const hw = 0.27 * Math.pow(reynoldsNumber, 0.85) 
-               * Math.pow(fluidPrandtl, 0.33) 
-               * Math.pow(ratio, -0.33) 
                * (fluidThermalConductivity / particleDiameter);
     return hw;
 }
