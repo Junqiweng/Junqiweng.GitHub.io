@@ -1,0 +1,145 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# JavaScript交互规则
+
+每个工具的JavaScript文件应实现以下基本功能和交互模式：
+
+## 标签页切换
+
+标签页交互应使用以下代码模式实现:
+
+```javascript
+// 标签页切换
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // 移除所有active类
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // 添加active类到当前标签和内容
+        btn.classList.add('active');
+        const tabId = btn.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+```
+
+## 表单验证
+
+所有输入字段应进行以下验证:
+
+```javascript
+// 表单验证
+function validateInputs() {
+    const inputs = document.querySelectorAll('input[type="number"]');
+    let isValid = true;
+    
+    inputs.forEach(input => {
+        if (!input.value || input.value === '' || isNaN(parseFloat(input.value))) {
+            input.classList.add('invalid');
+            isValid = false;
+        } else {
+            input.classList.remove('invalid');
+        }
+    });
+    
+    return isValid;
+}
+```
+
+## 计算按钮事件处理
+
+计算按钮应实现以下事件处理逻辑:
+
+```javascript
+// 计算按钮事件
+document.getElementById('calculate').addEventListener('click', function() {
+    if (validateInputs()) {
+        const inputValues = getInputValues();
+        const results = calculate(inputValues);
+        displayResults(results);
+        // 切换到结果标签页
+        document.querySelector('.tab-btn[data-tab="results"]').click();
+    }
+});
+```
+
+## 重置和清除功能
+
+重置和清除按钮应分别实现以下功能:
+
+```javascript
+// 重置按钮 - 恢复默认值
+document.getElementById('reset').addEventListener('click', function() {
+    resetToDefaults();
+});
+
+// 清除按钮 - 清空所有输入
+document.getElementById('clear').addEventListener('click', function() {
+    clearInputs();
+});
+```
+
+## 结果显示函数
+
+结果应以统一的格式显示，包括表格和图表:
+
+```javascript
+// 显示结果函数
+function displayResults(results) {
+    const resultArea = document.getElementById('result-content-area');
+    
+    // 清空之前的结果
+    resultArea.innerHTML = '';
+    
+    // 创建结果内容
+    let content = `
+        <div class="result-card">
+            <div class="section-header">
+                <span class="section-icon">📊</span>
+                <span class="section-title">计算结果</span>
+            </div>
+            <table class="results-table">
+                <!-- 结果表格内容 -->
+            </table>
+        </div>
+    `;
+    
+    resultArea.innerHTML = content;
+}
+```
+
+## 公式信息显示
+
+公式信息显示应使用模态框实现:
+
+```javascript
+// 公式信息显示
+document.querySelectorAll('.equation-info').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const formulaId = this.getAttribute('data-formula');
+        showFormulaDetails(formulaId);
+    });
+});
+
+// 显示公式详情
+function showFormulaDetails(formulaId) {
+    // 根据公式ID获取相应公式详情
+    const formulaDetails = getFormulaDetails(formulaId);
+    
+    // 显示模态框
+    const modal = document.createElement('div');
+    modal.classList.add('modal');
+    // 设置模态框内容
+}
+```
+
+这些标准化的交互模式确保了所有工具页面具有一致的用户体验和功能表现。

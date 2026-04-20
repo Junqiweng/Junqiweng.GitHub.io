@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 固定床反应器工具集 - 项目概述
+
+这是一个专业的固定床反应器设计与分析工具平台，包含多个用于不同计算的工具模块。
+
+## 主要文件
+
+- [index.html](mdc:index.html) - 网站主页面，提供对所有工具的导航
+- [global-styles.css](mdc:global-styles.css) - 全局样式表，定义了所有页面的统一风格
+
+## 工具模块目录
+
+网站包含多个专注于特定计算的工具模块，每个模块都有独立的目录：
+
+- [Pressure-drop](mdc:Pressure-drop/PressureDrop_index.html) - 压降计算工具
+- [Gas-solid-coefficients](mdc:Gas-solid-coefficients) - 气固传热系数计算
+- [Wall-thermal-conductivity](mdc:Wall-thermal-conductivity) - 壁面导热系数计算
+- [Overall-thermal-coefficient](mdc:Overall-thermal-coefficient) - 总传热系数计算
+- [Thermal-conductivity](mdc:Thermal-conductivity) - 导热系数计算
+- [Dispersion-coefficients](mdc:Dispersion-coefficients) - 扩散系数计算
+- [Trickle-bed-pressure-drop](mdc:Trickle-bed-pressure-drop) - 滴流床压降计算
+- [Tube_pressure_drop](mdc:Tube_pressure_drop) - 管压降计算

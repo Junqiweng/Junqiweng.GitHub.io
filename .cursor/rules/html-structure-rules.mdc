@@ -1,0 +1,12 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# HTML页面结构规则
+
+所有工具页面必须遵循以下基本HTML结构规则：
+
+## 页面模板
+
+每个工具页面应包含以下结构元素：
