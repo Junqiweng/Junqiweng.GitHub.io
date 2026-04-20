@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>有效导热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://polyfill.io">
     <!-- 引入全局样式表 -->
     <link rel="stylesheet" href="../global-styles.css">
     <style>
@@ -89,11 +88,6 @@
         window.addEventListener('beforeunload', function() {
             document.getElementById('loading-overlay').classList.add('show');
         });
-    </script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <!-- Load MathJax -->
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
     </script>
     <script>
         window.MathJax = {
@@ -282,6 +276,7 @@
         </footer>
     </div>
 
+    <script src="../lazy-mathjax.js"></script>
     <script src="ThermalConductivity_script.js"></script>
     
     <!-- Formula Details Modal -->

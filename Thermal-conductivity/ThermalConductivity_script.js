@@ -219,13 +219,14 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>`
         },
         
-        // 轴向弥散系数关联式
+        // 轴向有效导热关联式
         yagi_kunii_wakao_axial: {
-            title: "Yagi-Kunii/Wakao-Kaguei 轴向弥散系数模型",
-            formula: `$$ \\ k_{ea}= C_{disp,a}·\\rho_f·Cp_f·u·d_p $$`,
+            title: "Yagi-Kunii/Wakao-Kaguei 轴向有效导热模型",
+            formula: `$$ k_{ea}=k_0 + C_{disp,a}\\rho_f C_{p,f}u d_p = k_0 + C_{disp,a}k_fRe_pPr $$`,
             parameters: [
-                ["k_{ea}", "轴向弥散系数", "W/m·K"],
-                ["C_{disp,a}", "轴向弥散系数", "对于气体和液体，推荐值为0.5 (K_a = 2)"],  
+                ["k_{ea}", "轴向有效导热系数", "W/m·K"],
+                ["k_0", "静态有效导热系数", "W/m·K"],
+                ["C_{disp,a}", "轴向热弥散经验常数", "对于气体和液体，推荐值为0.5 (K_a = 2)"],
             ],
             theory: `<p><strong>Yagi-Kunii/Wakao-Kaguei轴向弥散模型</strong>描述了流体流动引起的导热贡献。</p>
             <p>关键特点：</p>
@@ -233,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <li>轴向弥散系数与颗粒佩克莱数成正比</li>
                 <li>对于气体和液体系统，推荐[C_{disp,a}≈0.5 (K_a = 2)</li>
                 <li>与径向弥散系数相比，轴向弥散通常是径向的4-5倍</li>
-                <li>此版本仅计算弥散效应，不包含静态导热系数</li>
+                <li>输出值为静态有效导热与动态轴向弥散贡献之和</li>
             </ul>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
@@ -253,9 +254,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 径向弥散系数关联式
         dixon_cresswell_radial: {
-            title: "Dixon-Cresswell 径向弥散系数模型",
-            formula: `$$ \\ k_{er} = \\frac{\\rho_f·Cp_f·u·d_p}{K_5} $$
-            $$ K_5 = 8.65 \\left[ 1 + 1.94 \\left( \\frac{d_p}{d_t} \\right)^2 \\right] $$`,
+            title: "Dixon-Cresswell 径向有效导热模型",
+            formula: `$$ k_{er} = k_0 + \\frac{\\rho_f C_{p,f} u d_p}{K_5} = k_0 + k_f \\frac{Re_p Pr}{K_5} $$
+            $$ K_5 = 8.65 \\left[ 1 + 19.4 \\left( \\frac{d_p}{d_t} \\right)^2 \\right] $$`,
             parameters: [
                 ["k_{er}", "径向弥散系数", "W/m·K"],
                 ["k_f", "流体导热系数", "W/m·K"],
@@ -269,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <li>通过K_5参数考虑管壁效应</li>
                 <li>当d_t/d_p很大时（壁面影响小），K_5≈8.65，接近Yagi和Kunii的结果</li>
                 <li>当d_t/d_p较小时，壁面附近空隙率增大，流速不均，导致径向混合减弱，K_5增大，动态贡献减小</li>
-                <li>此版本仅计算弥散效应，不包含静态导热系数</li>
+                <li>输出值为静态有效导热与动态径向弥散贡献之和</li>
             </ul>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
@@ -287,6 +288,45 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>`
         }
     };
+
+    const formulaReferences = {
+        yagi_kunii_static: [
+            { text: "Yagi, S.; Kunii, D. Effective thermal conductivity of packed beds; classic Yagi-Kunii packed-bed heat-transfer model.", url: "https://scholar.google.com/scholar?q=Yagi+Kunii+effective+thermal+conductivity+packed+beds" }
+        ],
+        zbs_static: [
+            { text: "Zehner, P.; Bauer, G.; Schlünder, E. U. Zehner-Bauer-Schlünder model for effective thermal conductivity of packed beds.", url: "https://scholar.google.com/scholar?q=Zehner+Bauer+Schl%C3%BCnder+effective+thermal+conductivity+packed+beds" }
+        ],
+        zbs_static_radiation: [
+            { text: "ZBS packed-bed effective thermal-conductivity model with radiation background and parameter discussion.", url: "https://www.sciencedirect.com/science/article/abs/pii/S0017931022004677" }
+        ],
+        yagi_kunii_wakao_axial: [
+            { text: "Wakao, N.; Kaguei, S. (1982). Heat and Mass Transfer in Packed Beds. Gordon and Breach.", url: "https://scholar.google.com/scholar?q=Wakao+Kaguei+Heat+and+Mass+Transfer+in+Packed+Beds+1982" }
+        ],
+        dixon_cresswell_radial: [
+            { text: "Dixon, A. G.; Cresswell, D. L. (1979). Theoretical prediction of effective heat transfer parameters in packed beds. AIChE Journal.", url: "https://scholar.google.com/scholar?q=Dixon+Cresswell+1979+Theoretical+prediction+effective+heat+transfer+parameters+packed+beds" },
+            { text: "Specchia-Baldi type radial effective conductivity form with K5 = 8.65[1 + 19.4(dp/dt)^2].", url: "https://www.mdpi.com/2227-9717/8/10/1213/htm" }
+        ]
+    };
+
+    function renderFormulaReferences(formulaId) {
+        const references = formulaReferences[formulaId] || [];
+        if (!references.length) return '';
+
+        return `
+                <div class="formula-section references-section">
+                    <h4>
+                        <span class="section-icon">📚</span>
+                        <span class="section-title">参考文献</span>
+                    </h4>
+                    <div class="theory-content">
+                        <div class="theory-card">
+                            <ul>
+                                ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+    }
 
     // Add click handler to each formula link
     formulaLinks.forEach(link => {
@@ -308,7 +348,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             try {
-                loadingOverlay?.classList.add('show');
                 modal.style.display = "block";
                 modal.classList.add('show');
                 
@@ -319,16 +358,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 await showFormulaDetails(formulaId);
-                
-                // 确保MathJax完成渲染
-                if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
-                    try {
-                    await MathJax.typesetPromise([modal]);
-                        console.log('Modal MathJax typesetting complete');
-                    } catch (error) {
-                        console.error('Error in MathJax typesetting for modal:', error);
-                    }
-                }
             } catch (error) {
                 console.error('Error showing formula:', error);
             } finally {
@@ -459,28 +488,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>` : ''}
                     </div>
                 </div>
+                ${renderFormulaReferences(formulaId)}
             </div>
         `;
 
         formulaDetail.innerHTML = content;
-        
-        // 确保MathJax处理所有表格内容
-        if (window.MathJax) {
-            try {
-                console.log('Typesetting formula with MathJax');
-                    await MathJax.typesetPromise([formulaDetail]);
-                console.log('MathJax typesetting complete');
-                
-                // 移除loading效果
-                const formulaMath = formulaDetail.querySelector('.formula-math');
-                if (formulaMath) {
-                    formulaMath.classList.remove('loading');
-                }
-            } catch (error) {
-                console.error('MathJax typesetting error:', error);
-            }
+
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(formulaDetail);
         } else {
-            console.warn('MathJax not available');
+            const formulaMath = formulaDetail.querySelector('.formula-math');
+            if (formulaMath) {
+                formulaMath.classList.remove('loading');
+            }
         }
     }
 
@@ -827,16 +847,14 @@ document.addEventListener('DOMContentLoaded', function() {
             staticModels.push('zbs_static_radiation');
         }
         const staticResults = calculateStaticConductivity(inputs, staticModels);
-        const k0 = parseFloat(staticResults['average']);
+        const k0 = Number.isFinite(parseFloat(staticResults['average'])) ? parseFloat(staticResults['average']) : 0;
         
         // 添加Yagi-Kunii/Wakao-Kaguei轴向弥散模型
         if (correlations.includes('yagi_kunii_wakao_axial')) {
-            // 计算轴向弥散导热系数，Cdisp,a = 0.5 (Ka = 2)
+            // 计算轴向有效导热系数：静态有效导热 + 轴向热弥散
             const Cdisp_a = 0.5; // 气体和液体推荐值
             const dispersion = fluidThermalConductivity * Cdisp_a * Pe;
-            // 删除静态有效导热系数的贡献，只考虑弥散部分
-            // const kea = k0 + dispersion;
-            const kea = dispersion;
+            const kea = k0 + dispersion;
             
             results['yagi_kunii_wakao_axial'] = kea.toFixed(4);
             results['yagi_kunii_wakao_axial_disp_only'] = dispersion.toFixed(4); // 仅弥散部分
@@ -866,19 +884,17 @@ document.addEventListener('DOMContentLoaded', function() {
             staticModels.push('zbs_static_radiation');
         }
         const staticResults = calculateStaticConductivity(inputs, staticModels);
-        const k0 = parseFloat(staticResults['average']);
+        const k0 = Number.isFinite(parseFloat(staticResults['average'])) ? parseFloat(staticResults['average']) : 0;
         
         // 添加Dixon-Cresswell径向弥散模型
         if (correlations.includes('dixon_cresswell_radial')) {
             // 计算K5参数 - 考虑壁面效应
             const dt_dp = tubeParticleRatio || 10; // 默认值为10（如果未提供）
-            const K5 = 8.65 * (1 + 1.94 * Math.pow(dt_dp, -2));
+            const K5 = 8.65 * (1 + 19.4 * Math.pow(dt_dp, -2));
             
-            // 计算径向弥散导热系数
+            // 计算径向有效导热系数：静态有效导热 + 径向热弥散
             const dispersion = fluidThermalConductivity * (Pe / K5);
-            // 删除静态有效导热系数的贡献，只考虑弥散部分
-            // const ker = k0 + dispersion;
-            const ker = dispersion;
+            const ker = k0 + dispersion;
             
             results['dixon_cresswell_radial'] = ker.toFixed(4);
             results['dixon_cresswell_radial_disp_only'] = dispersion.toFixed(4); // 仅弥散部分
@@ -1338,7 +1354,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 try {
-                    loadingOverlay?.classList.add('show');
                     modal.style.display = "block";
                     modal.classList.add('show');
                     
@@ -1358,7 +1373,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 手动触发MathJax渲染
     function renderMathJax() {
-        if (window.MathJax) {
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(document.body);
+        } else if (window.MathJax && typeof window.MathJax.typeset === 'function') {
             window.MathJax.typeset();
         }
     }

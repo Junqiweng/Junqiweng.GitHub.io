@@ -560,8 +560,10 @@ function performCalculations() {
         // 切换到结果标签
         document.querySelector('.tab-btn[data-tab="results"]').click();
         
-        // 重新渲染数学公式
-        if (window.MathJax) {
+        // 结果区公式在空闲时排版，避免阻塞计算反馈。
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(resultContent);
+        } else if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
             MathJax.typesetPromise()
                 .then(() => {
                     console.log('Typeset completed');
@@ -691,6 +693,46 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('load', function() {
         loadingOverlay.classList.remove('show');
     });
+
+    const formulaReferences = {
+        darcy_weisbach: [
+            {
+                text: "Darcy-Weisbach equation and Moody/Colebrook friction-factor framework.",
+                url: "https://www.sciencedirect.com/topics/engineering/darcy-weisbach-equation"
+            },
+            {
+                text: "Colebrook, C. F. (1939). Turbulent flow in pipes, with particular reference to the transition region between smooth and rough pipe laws. Journal of the ICE, 11, 133-156.",
+                url: "https://doi.org/10.1680/ijoti.1939.13150"
+            },
+            {
+                text: "Blasius smooth-pipe friction correlation literature-search entry.",
+                url: "https://scholar.google.com/scholar?q=Blasius+1913+smooth+pipe+friction+factor+0.3164+Re%5E-0.25"
+            }
+        ],
+        local_loss: [
+            {
+                text: "Crane Co. Technical Paper No. 410. Flow of Fluids Through Valves, Fittings, and Pipe.",
+                url: "https://scholar.google.com/scholar?q=Crane+Technical+Paper+410+Flow+of+Fluids+Through+Valves+Fittings+and+Pipe"
+            },
+            {
+                text: "Idelchik, I. E. Handbook of Hydraulic Resistance.",
+                url: "https://scholar.google.com/scholar?q=Idelchik+Handbook+of+Hydraulic+Resistance+local+loss+coefficients"
+            }
+        ]
+    };
+
+    function renderFormulaReferences(formulaId) {
+        const references = formulaReferences[formulaId] || [];
+        if (!references.length) return '';
+
+        return `
+                    <div class="reference-section">
+                        <h4>参考文献</h4>
+                        <ul>
+                            ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                        </ul>
+                    </div>`;
+    }
     
     // 显示公式详情
     async function showFormulaDetails(formulaId) {
@@ -889,18 +931,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 break;
         }
+
+        formulaContent += renderFormulaReferences(formulaId);
         
         formulaDetail.innerHTML = formulaContent;
         formulaModal.style.display = 'block';
-        
-        // 渲染数学公式
-        if (window.MathJax) {
-            try {
-                await MathJax.typesetPromise([formulaDetail]);
-                console.log('Modal formula typeset completed');
-            } catch (err) {
-                console.log('Modal formula typeset failed: ' + err.message);
-            }
+
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(formulaDetail);
         }
     }
 });
@@ -927,4 +965,4 @@ function getFormulaDescription(type) {
         'colebrook_white': 'Colebrook-White方程（一般湍流条件）：\n1/√f = -2log₁₀(ε/D/3.7 + 2.51/(Re·√f))\n\n通过迭代求解，适用于大多数湍流条件。'
     };
     return descriptions[type] || '未知计算公式';
-} 
+}

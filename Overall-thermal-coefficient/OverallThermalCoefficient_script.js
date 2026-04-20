@@ -86,41 +86,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("typesetMath: No element provided");
             return;
         }
-        
-        // 使用全局函数如果可用
-        if (window.typeset) {
-            try {
-                await window.typeset(element);
-                console.log("Typeset completed using global function");
-                return;
-            } catch (e) {
-                console.error("Error using global typeset function:", e);
-            }
-        }
-        
-        // 直接使用MathJax API
-        if (window.MathJax) {
-            try {
-                if (typeof MathJax.typesetPromise === 'function') {
-                    // 尝试清除可能的错误状态
-                    if (typeof MathJax.texReset === 'function') {
-                        MathJax.texReset();
-                    }
-                    
-                    await MathJax.typesetPromise([element]);
-                    console.log("Direct MathJax typesetting completed");
-                } else if (typeof MathJax.Hub !== 'undefined') {
-                    // MathJax 2.x 兼容
-                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, element]);
-                    console.log("MathJax 2.x typesetting queued");
-                } else {
-                    console.warn("MathJax found but no typesetting method available");
-                }
-            } catch (error) {
+
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(element);
+        } else if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise([element]).catch(error => {
                 console.error("MathJax typesetting error:", error);
-            }
-        } else {
-            console.error("MathJax not available");
+            });
         }
     }
 
@@ -135,16 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
         modalContent.innerHTML = content;
         modal.removeAttribute('hidden');
         modal.style.display = 'block';
-        
-        // 等待DOM更新
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // 渲染数学公式
-        try {
-            await typesetMath(modalContent);
-        } catch (err) {
-            console.error("Error typesetting math in modal:", err);
-        }
+
+        typesetMath(modalContent);
 
         // 焦点管理
         const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -189,11 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="formula-line">$$ N_w = \\frac{D_t}{2}\\sqrt{\\frac{4h_w}{k_{er} D_t}} $$</div>
                 
-                <div class="formula-line">$$ h_w = Nu_w \\cdot \\frac{k_f}{D_t} $$</div>
+                <div class="formula-line">$$ h_w = Nu_w \\cdot \\frac{k_f}{d_p} $$</div>
                 
                 <div class="formula-line">$$ Nu_w = (0.5 \\cdot Re_p^{0.5} + 0.2 \\cdot Re_p^{2/3}) \\cdot Pr^{1/3} $$</div>
                 
-                <div class="formula-line">$$ k_{er} = k_e + 0.1 \\cdot Re_p \\cdot Pr \\cdot k_f $$</div>
+                <div class="formula-line">$$ k_{er} = k_e + k_f \\frac{Re_p Pr}{8.65\\left[1+19.4\\left(d_p/D_t\\right)^2\\right]} $$</div>
                 
                 <div class="formula-line">$$ k_e = k_f \\cdot \\left[ \\epsilon + (1-\\epsilon) \\cdot \\frac{k_s/k_f}{1 + 0.1 \\cdot (k_s/k_f)} \\right] $$</div>
                 
@@ -242,11 +206,11 @@ document.addEventListener('DOMContentLoaded', () => {
             formula: `
                 <div class="formula-line">$$ \\frac{1}{U} = \\frac{1}{h_w} + \\frac{D_t}{4k_{er}} $$</div>
                 
-                <div class="formula-line">$$ h_w = Nu_w \\cdot \\frac{k_f}{D_t} $$</div>
+                <div class="formula-line">$$ h_w = Nu_w \\cdot \\frac{k_f}{d_p} $$</div>
                 
                 <div class="formula-line">$$ Nu_w = (0.5 \\cdot Re_p^{0.5} + 0.2 \\cdot Re_p^{2/3}) \\cdot Pr^{1/3} $$</div>
                 
-                <div class="formula-line">$$ k_{er} = k_e + 0.1 \\cdot Re_p \\cdot Pr \\cdot k_f $$</div>
+                <div class="formula-line">$$ k_{er} = k_e + k_f \\frac{Re_p Pr}{8.65\\left[1+19.4\\left(d_p/D_t\\right)^2\\right]} $$</div>
                 
                 <div class="formula-line">$$ k_e = k_f \\cdot \\left[ \\epsilon + (1-\\epsilon) \\cdot \\frac{k_s/k_f}{1 + 0.1 \\cdot (k_s/k_f)} \\right] $$</div>
                 
@@ -288,6 +252,44 @@ document.addEventListener('DOMContentLoaded', () => {
             `
         }
     };
+
+    const formulaReferences = {
+        overall_u: [
+            {
+                text: "Dixon, A. G.; Cresswell, D. L. (1979). Theoretical prediction of effective heat transfer parameters in packed beds. AIChE Journal.",
+                url: "https://scholar.google.com/scholar?q=Dixon+Cresswell+1979+Theoretical+prediction+effective+heat+transfer+parameters+packed+beds"
+            },
+            {
+                text: "Dixon, A. G. (1996). Improved equation for overall heat transfer coefficient in packed beds. Chemical Engineering and Processing.",
+                url: "https://www.sciencedirect.com/science/article/abs/pii/0255270196800122"
+            }
+        ],
+        overall_u_approximation: [
+            {
+                text: "Dixon, A. G.; Cresswell, D. L. (1979). Effective heat-transfer parameters in packed beds; approximate resistance-network forms.",
+                url: "https://scholar.google.com/scholar?q=Dixon+Cresswell+1979+effective+heat+transfer+parameters+packed+beds"
+            },
+            {
+                text: "Dixon improved overall heat-transfer coefficient comparison formula.",
+                url: "https://www.sciencedirect.com/science/article/abs/pii/0255270196800122"
+            }
+        ]
+    };
+
+    function renderFormulaReferences(formulaId) {
+        const references = formulaReferences[formulaId] || [];
+        if (!references.length) return '';
+
+        return `
+            <div class="formula-section">
+                <h5><span class="section-icon">📚</span> 参考文献</h5>
+                <div class="theory-text">
+                    <ul>
+                        ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                    </ul>
+                </div>
+            </div>`;
+    }
 
     async function showFormulaDetails(formulaId) {
         // 检查公式ID是否存在
@@ -359,6 +361,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
         }
+
+        modalContentHTML += renderFormulaReferences(formulaId);
         
         modalContentHTML += `</div>`;
         
@@ -447,8 +451,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return { overall_u: NaN, Re_p, Pr, Nu_w: NaN, k_e: NaN, k_er: NaN, N_w: NaN };
         }
 
-        // 计算壁面传热系数 (hw)
-        const h_w = Nu_w * fluidThermalConductivity / tubeDiameter;
+        // Nu_w 定义为 h_w d_p/k_f，特征长度为颗粒直径
+        const h_w = Nu_w * fluidThermalConductivity / particleDiameter;
         if (!isFinite(h_w) || h_w < 0) {
             console.warn("Invalid wall heat transfer coefficient (hw) calculated.");
             return { overall_u: NaN, Re_p, Pr, Nu_w, h_w: NaN, k_e: NaN, k_er: NaN, N_w: NaN };
@@ -462,8 +466,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return { overall_u: NaN, Re_p, Pr, Nu_w, h_w, k_e: NaN, k_er: NaN, N_w: NaN };
         }
 
-        // 计算有效径向导热系数 k_er (考虑热扩散贡献)
-        const k_er = k_e + 0.1 * Re_p * Pr * fluidThermalConductivity;
+        // 计算有效径向导热系数 k_er：静态项 + Dixon-Cresswell 型径向热弥散项
+        const K5 = 8.65 * (1 + 19.4 * Math.pow(particleDiameter / tubeDiameter, 2));
+        const k_er = k_e + fluidThermalConductivity * Re_p * Pr / K5;
         if (!isFinite(k_er) || k_er < 0) {
             console.warn("Invalid effective radial conductivity (k_er) calculated.");
             return { overall_u: NaN, Re_p, Pr, Nu_w, h_w, k_e, k_er: NaN, N_w: NaN };
@@ -537,8 +542,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return { overall_u: NaN, Re_p, Pr, Nu_w: NaN };
         }
 
-        // Calculate wall heat transfer coefficient (hw)
-        const h_w = Nu_w * fluidThermalConductivity / tubeDiameter;
+        // Nu_w 定义为 h_w d_p/k_f，特征长度为颗粒直径
+        const h_w = Nu_w * fluidThermalConductivity / particleDiameter;
         if (!isFinite(h_w) || h_w < 0) {
             console.warn("Invalid wall heat transfer coefficient (hw) calculated.");
             return { overall_u: NaN, Re_p, Pr, Nu_w, h_w: NaN };
@@ -548,8 +553,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const ks_kf_ratio = solidThermalConductivity / fluidThermalConductivity;
         const k_e = fluidThermalConductivity * (voidFraction + (1 - voidFraction) * ks_kf_ratio / (1 + 0.1 * ks_kf_ratio));
         
-        // 计算有效径向导热系数 k_er (考虑热扩散贡献)
-        const k_er = k_e + 0.1 * Re_p * Pr * fluidThermalConductivity;
+        // 计算有效径向导热系数 k_er：静态项 + Dixon-Cresswell 型径向热弥散项
+        const K5 = 8.65 * (1 + 19.4 * Math.pow(particleDiameter / tubeDiameter, 2));
+        const k_er = k_e + fluidThermalConductivity * Re_p * Pr / K5;
 
         // 简化模型，忽略贝塞尔函数项
         const radial_resistance = tubeDiameter / (4 * k_er);
@@ -970,8 +976,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Setup ---
     handleReset(); // Set default values on page load
     switchToTab('input'); // Ensure input tab is active initially
-    // Try to typeset initial math if any exists outside modal
-    typesetMath(document.body); 
 
     // 确保在页面加载时检查控制台错误
     console.log("脚本加载完成，DOM元素状态:");

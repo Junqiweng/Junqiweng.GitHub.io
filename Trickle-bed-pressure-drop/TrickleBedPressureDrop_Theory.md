@@ -72,55 +72,71 @@ $$
 
 ---
 
-### 4.3 Sato模型
+### 4.3 Sato et al. 关联式
 
 $$
-\phi_L^2 = 1 + 25 \left(\frac{u_G}{u_L}\right)^{0.8} \left(\frac{Re_G}{Re_L}\right)^{0.3} We^{-0.15}
+X = \left(\frac{\Delta P_L}{\Delta P_G}\right)^{1/2}
 $$
 
 $$
-\Delta P_{TP} = \Delta P_L \cdot \phi_L^2
+\phi_L = 1.30 + 1.85X^{-0.85}
 $$
+
+$$
+\Delta P_{TP} = \Delta P_L \phi_L^2
+$$
+
+当前实现采用公开资料可核验的 Lockhart-Martinelli 型 Sato 关联式。该式为经验关联式，建议范围为 $0.1 < X < 20$；超出范围时应与实验标定或其他模型交叉验证。
 
 ---
 
-### 4.4 Attou-Boyer-Ferschneider模型
+### 4.4 Attou-Boyer-Ferschneider型三相阻力闭合
 
 $$
-\Delta P = \left( \kappa \frac{\mu_L u_L}{d_p^2} + f_{GL} \frac{\rho_L u_L^2}{d_p} \right) (1 + 3\alpha_G) L
+F_{LS}=A_{LS}\mu_Lu_{Li}+B_{LS}\rho_Lu_{Li}^2
 $$
 
-- \(\kappa\)：Ergun阻力系数
-- \(f_{GL}\)：气液界面摩擦系数
-- \(\alpha_G\)：气相体积分率
+$$
+F_{GL}=\varepsilon_G(A_{GL}\mu_Gu_r+B_{GL}\rho_Gu_r^2)
+$$
+
+其中：
+
+$$
+\varepsilon_G=\varepsilon\alpha_G,\quad \varepsilon_L=\varepsilon(1-\alpha_G),\quad
+u_{Gi}=\frac{u_G}{\varepsilon_G},\quad u_{Li}=\frac{u_L}{\varepsilon_L},\quad u_r=|u_{Gi}-u_{Li}|
+$$
+
+$$
+A_{LS}=\frac{150(1-\varepsilon)^2}{(1-\alpha_G)^3\varepsilon^3d_p^2},\quad
+B_{LS}=\frac{1.75(1-\varepsilon)}{(1-\alpha_G)^3\varepsilon^3d_p}
+$$
+
+$$
+A_{GL}=\frac{150(1-\varepsilon\alpha_G)^2}{\alpha_G^3\varepsilon^3d_p^2}
+\left(\frac{1-\varepsilon}{1-\varepsilon\alpha_G}\right)^{1/3}
+$$
+
+$$
+B_{GL}=\frac{1.75(1-\varepsilon\alpha_G)}{\alpha_G^3\varepsilon^3d_p}
+\left(\frac{1-\varepsilon}{1-\varepsilon\alpha_G}\right)^{1/3}
+$$
+
+稳态摩擦闭合采用：
+
+$$
+F_{GL}=\alpha_GF_{LS},\quad \Delta P=L\frac{F_{GL}}{\varepsilon_G}
+$$
+
+当前实现删除了旧版任意的 $(1+3\alpha_G)$ 放大项，改为求解气相饱和度 $\alpha_G$ 后输出摩擦压降。该实现未包含轴向加速度项、重力压头和流型转变判据，因此仍应标为“Attou型摩擦闭合”，而不是完整一维 CFD 原模型。
 
 ---
 
-### 4.5 Holub模型
+### 4.5 Holub原始模型（当前禁用）
 
-- 定义流型参数：
+Holub 模型是孔尺度狭缝型现象模型，用于联立预测压降、液持率和涓流-脉动流转变。公开摘要和综述均表明该模型需要单相 Ergun 常数、液持率、滑移/剪切因子和流型判据，而不是单一 $\phi_L^2$ 切换式。
 
-$$
-\Psi = Re_L \cdot Re_G^{0.4} \cdot Fr^{-0.6}
-$$
-
-- **涓流区域** (\(\Psi < 100\))：
-
-$$
-\phi_L^2 = 1 + \frac{20}{X} + \frac{1}{X^2}
-$$
-
-- **脉动流区域** (\(\Psi \geq 100\))：
-
-$$
-\phi_L^2 = 1 + 60 \left(\frac{u_G}{u_L}\right)^{0.9} \left(\frac{Re_G}{Re_L}\right)^{0.2} We^{-0.1}
-$$
-
-- 总压降：
-
-$$
-\Delta P_{TP} = \Delta P_L \cdot \phi_L^2
-$$
+当前版本不再输出旧版 Holub 简化估算值。待补齐原文方程、参数表和联立求解策略后，方可重新启用 Holub 数值计算。
 
 ---
 
@@ -161,8 +177,9 @@ $$
 ## 6. 工程应用建议
 
 - 低气液比、涓流区域优先采用Lockhart-Martinelli或Larkins模型。
-- 高气液比、脉动流区域建议采用Sato或Holub模型。
-- Attou-Boyer-Ferschneider模型适用于考虑气液固三相作用的复杂工况。
+- Sato et al. 关联式可用于 Lockhart-Martinelli 参数范围内的经验估算，超出 $0.1 < X < 20$ 时不建议外推。
+- Attou-Boyer-Ferschneider 型摩擦闭合适用于稳态均匀涓流区的摩擦压降估算；若重力压头、液泛或脉动流重要，应使用完整模型或实验标定。
+- Holub 模型当前禁用，不能作为设计压降输出。
 - 设计中建议多模型对比，取合理范围。
 - 注意参数单位一致，特别是密度、粘度、表面张力。
 

@@ -169,7 +169,7 @@ $$
 ### 5.6 Bauer模型
 
 $$
-\frac{1}{Pe_{rad}} = \frac{0.73 \varepsilon}{Re Pr} + \frac{1}{7 \left(2 - \left(1 - \frac{2}{N}\right)\right)^2}
+\frac{1}{Pe_{rad}} = \frac{0.73 \varepsilon}{Re Sc} + \frac{1}{7 \left(2 - \left(1 - \frac{2}{N}\right)\right)^2}
 $$
 
 $$
@@ -181,7 +181,7 @@ $$
 ### 5.7 Specchia模型
 
 $$
-\frac{1}{Pe_{rad}} = \frac{1}{8.65 \left(1 + \frac{19.4}{N^2}\right)}
+\frac{1}{Pe_{rad}} = \frac{\varepsilon}{10 Re Sc} + \frac{1}{12}
 $$
 
 $$

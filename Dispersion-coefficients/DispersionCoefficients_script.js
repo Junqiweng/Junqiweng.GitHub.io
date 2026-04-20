@@ -779,81 +779,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal Functionality
     function showModal() {
         modal.style.display = "block";
-        
+
         // 关注可访问性
         setTimeout(() => {
-            // 重新渲染数学公式
-            if (window.MathJax) {
-                try {
-                    // 先尝试使用typesetPromise
-                    if (typeof MathJax.typesetPromise === 'function') {
-                        MathJax.typesetPromise([formulaDetail])
-                            .catch(err => console.error('MathJax typeset error:', err));
-                    } 
-                    // 如果没有typesetPromise方法，尝试使用typeset
-                    else if (typeof MathJax.typeset === 'function') {
-                        MathJax.typeset([formulaDetail]);
-                    }
-                    // 如果两者都不存在，等待MathJax加载完成后再尝试渲染
-                    else if (typeof MathJax.startup !== 'undefined') {
-                        MathJax.startup.promise.then(() => {
-                            MathJax.typesetPromise([formulaDetail])
-                                .catch(err => console.error('MathJax typeset error:', err));
-                        });
-                    }
-                } catch (error) {
-                    console.error('MathJax typesetting error:', error);
-                }
-            }
-            
             // 聚焦第一个可交互元素
             const firstFocusable = modal.querySelector(
                 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
             );
             if (firstFocusable) firstFocusable.focus();
-        }, 300); // 延长等待时间，确保DOM已经完全更新
+        }, 0);
     }
 
     // 加载MathJax函数
     function loadMathJax() {
-        return new Promise((resolve, reject) => {
-            if (window.MathJax) {
-                resolve(window.MathJax);
-                return;
-            }
-            
-            // 配置MathJax
-            window.MathJax = {
-                tex: {
-                    inlineMath: [['$', '$'], ['\\(', '\\)']],
-                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                    processEscapes: true,
-                    processEnvironments: true
-                },
-                options: {
-                    enableMenu: false
-                },
-                startup: {
-                    pageReady() {
-                        return MathJax.startup.defaultPageReady().then(() => {
-                            resolve(window.MathJax);
-                        });
-                    }
-                }
-            };
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-            script.async = true;
-            script.id = 'MathJax-script';
-            
-            script.onload = () => {
-                console.log('MathJax 加载完成');
-            };
-            
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
+        if (typeof window.ensureMathJaxReady === 'function') {
+            return window.ensureMathJaxReady();
+        }
+        return Promise.resolve(window.MathJax || null);
     }
 
     // Event Listeners
@@ -877,8 +819,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const correlation = link.dataset.correlation;
             const info = formulaInfo[correlation];
             if (info) {
-                loadingOverlay.classList.add('show');
-                
                 // 使用新的HTML结构展示公式详情
                 let content = `
                     <div class="formula-detail">
@@ -969,33 +909,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>`;
                 }
                 
+                content += renderFormulaReferences(correlation);
+
                 content += `</div>`;
                 
                 formulaDetail.innerHTML = content;
-                
-                // 加载MathJax (如果尚未加载)
-                if (typeof window.MathJax === 'undefined') {
+                showModal();
+                loadingOverlay.classList.remove('show');
+
+                if (typeof window.scheduleMathJaxTypeset === 'function') {
+                    window.scheduleMathJaxTypeset(formulaDetail);
+                } else {
                     loadMathJax();
                 }
-                
-                showModal();
-                
-                // 短暂延迟后隐藏加载覆盖层
-                setTimeout(() => {
-                    loadingOverlay.classList.remove('show');
-                }, 300);
             }
-        }
-    });
-
-    // Performance optimization for navigation
-    document.querySelectorAll('a[href]').forEach(link => {
-        if (link.hostname === window.location.hostname) {
-            // Preload same-domain pages
-            let prefetcher = document.createElement('link');
-            prefetcher.rel = 'prefetch';
-            prefetcher.href = link.href;
-            document.head.appendChild(prefetcher);
         }
     });
 
@@ -1353,7 +1280,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         radial_bauer: {
             title: "径向反混系数 - Bauer模型",
-        formula: `\\[ \\frac{1}{Pe_{rm}} = \\frac{0.73\\varepsilon_b}{Re\\cdot Pr} + \\frac{1}{7\\left[2-\\left(1-\\frac{2}{N}\\right)\\right]^2} \\]
+        formula: `\\[ \\frac{1}{Pe_{rm}} = \\frac{0.73\\varepsilon_b}{Re\\cdot Sc} + \\frac{1}{7\\left[2-\\left(1-\\frac{2}{N}\\right)\\right]^2} \\]
                         \\[ D_{rad} = \\frac{u_0 d_p}{Pe_{rm}} \\]
 \\[ N = \\frac{D}{d_p} \\]`,
         parameters: [
@@ -1361,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ["Pe_{rm}", "径向佩克列数", "径向流动条件下的特征无量纲数"],
             ["\\varepsilon_b", "床层空隙率", "固定床中流体所占体积分数"],
             ["Re", "雷诺数", "表征流动状态的无量纲数"],
-            ["Pr", "普朗特数", "动量扩散与热扩散的比值"],
+            ["Sc", "施密特数", "动量扩散与质量扩散的比值"],
             ["N", "管径比", "管径与颗粒直径的比值 (D/dp)"]
         ],
         theory: `<p><strong>Bauer模型</strong>在描述固定床径向混合方面具有良好的适用性。</p>
@@ -1423,21 +1350,23 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         radial_specchia: {
             title: "径向反混系数 - Specchia模型",
-        formula: `\\[ \\frac{1}{Pe_{rm}} = \\frac{1}{8.65\\left(1+\\frac{19.4}{N^2}\\right)} \\]
+        formula: `\\[ \\frac{1}{Pe_{rm}} = \\frac{\\varepsilon_b}{10Re\\cdot Sc} + \\frac{1}{12} \\]
                         \\[ D_{rad} = \\frac{u_0 d_p}{Pe_{rm}} \\]
-\\[ N = \\frac{D}{d_p} \\]`,
+\\[ Sc = \\frac{\\mu}{\\rho D_m} \\]`,
         parameters: [
             ["D_{rad}", "径向反混系数", "表征流体在固定床中径向混合的系数"],
             ["Pe_{rm}", "径向佩克列数", "径向流动条件下的特征无量纲数"],
-            ["N", "管径比", "管径与颗粒直径的比值 (D/dp)"],
+            ["\\varepsilon_b", "床层空隙率", "固定床中流体所占体积分数"],
+            ["Re", "雷诺数", "表征流动状态的无量纲数"],
+            ["Sc", "施密特数", "动量扩散与质量扩散的比值"],
             ["u_0", "流体表观速度", "通过固定床的流体表观速度"],
             ["d_p", "颗粒直径", "填充颗粒的特征尺寸"]
         ],
         theory: `<p><strong>Specchia模型</strong>提供了一种形式简单的径向弥散系数计算方法。</p>
         <p>关键特点：</p>
                     <ul>
-                        <li>不考虑驻点扩散的影响</li>
-                        <li>主要考虑管径比对径向混合的影响</li>
+                        <li>包含低流速下的分子扩散贡献</li>
+                        <li>以Re和Sc为质量弥散基准</li>
                         <li>形式简单，易于应用</li>
                     </ul>
         <p>Specchia等人在1980年提出的这一模型因其简洁性而受到欢迎。</p>`,
@@ -1457,6 +1386,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>`
         }
     };
+
+    const formulaReferences = {
+        axial_standard: [
+            { text: "Levenspiel, O. Chemical Reaction Engineering, axial dispersion and Peclet-number background.", url: "https://scholar.google.com/scholar?q=Levenspiel+Chemical+Reaction+Engineering+axial+dispersion+Peclet" }
+        ],
+        axial_edwards: [
+            { text: "Edwards, M. F.; Richardson, J. F. (1968). Gas dispersion in packed beds. Chemical Engineering Science.", url: "https://scholar.google.com/scholar?q=Edwards+Richardson+1968+gas+dispersion+packed+beds" }
+        ],
+        axial_zehner: [
+            { text: "Zehner, P.; Schlünder, E. U. Packed-bed dispersion/transport correlation source.", url: "https://scholar.google.com/scholar?q=Zehner+Schl%C3%BCnder+1970+packed+bed+dispersion" }
+        ],
+        axial_gunn: [
+            { text: "Gunn, D. J. (1987). Axial and radial dispersion in fixed beds. Chemical Engineering Science.", url: "https://scholar.google.com/scholar?q=Gunn+1987+mixing+dispersion+packed+beds+Chemical+Engineering+Science" }
+        ],
+        radial_edwards: [
+            { text: "Edwards, M. F.; Richardson, J. F. (1968). Packed-bed dispersion correlation source.", url: "https://scholar.google.com/scholar?q=Edwards+Richardson+1968+dispersion+packed+beds" }
+        ],
+        radial_zehner: [
+            { text: "Zehner, P.; Schlünder, E. U. Packed-bed radial dispersion correlation source.", url: "https://scholar.google.com/scholar?q=Zehner+Schl%C3%BCnder+radial+dispersion+packed+beds" }
+        ],
+        radial_gunn: [
+            { text: "Gunn, D. J. (1987). Mixing and dispersion in packed beds. Chemical Engineering Science.", url: "https://scholar.google.com/scholar?q=Gunn+1987+mixing+dispersion+packed+beds" }
+        ],
+        radial_lerou: [
+            { text: "Lerou, J. J.; Wammes, W. J. A. Radial dispersion wall-effect correlation source.", url: "https://scholar.google.com/scholar?q=Lerou+Wammes+radial+dispersion+packed+beds" }
+        ],
+        radial_bauer: [
+            { text: "Bauer, R. (1978). Radial dispersion in packed beds. Chemical Engineering Science.", url: "https://scholar.google.com/scholar?q=Bauer+1978+radial+dispersion+packed+beds+Chemical+Engineering+Science" }
+        ],
+        radial_wakao_kaguei: [
+            { text: "Wakao, N.; Kaguei, S. (1982). Heat and Mass Transfer in Packed Beds.", url: "https://scholar.google.com/scholar?q=Wakao+Kaguei+Heat+and+Mass+Transfer+in+Packed+Beds+1982" }
+        ],
+        radial_specchia: [
+            { text: "Specchia, V.; Baldi, G.; Sicardi, S. (1980). Radial transport in packed beds. Chemical Engineering Communications / related packed-bed transport work.", url: "https://scholar.google.com/scholar?q=Specchia+Baldi+Sicardi+1980+radial+dispersion+packed+beds" }
+        ]
+    };
+
+    function renderFormulaReferences(formulaId) {
+        const references = formulaReferences[formulaId] || [];
+        if (!references.length) return '';
+
+        return `
+                        <div class="formula-section references-section">
+                            <h4>
+                                <span class="section-icon">📚</span>
+                                <span class="section-title">参考文献</span>
+                            </h4>
+                            <div class="theory-content">
+                                <div class="theory-card">
+                                    <ul>
+                                        ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>`;
+    }
 
     // Event Listeners - 确保在这里直接设置事件监听器
     try {

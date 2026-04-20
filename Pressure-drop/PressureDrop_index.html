@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>固定床压降计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://polyfill.io">
     <!-- 引入全局样式表 -->
     <link rel="stylesheet" href="../global-styles.css">
     <style>
@@ -97,11 +96,6 @@
             document.getElementById('loading-overlay').classList.add('show');
         });
     </script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <!-- Load MathJax -->
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
     <script>
         window.MathJax = {
             tex: {
@@ -109,12 +103,11 @@
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
                 processEscapes: true
             },
-            svg: {
-                fontCache: 'global',
-                scale: 1.2
+            chtml: {
+                scale: 1.05
             },
             startup: {
-                typeset: true
+                typeset: false
             },
             options: {
                 enableMenu: false
@@ -265,6 +258,7 @@
             <p>© 固定床反应器工具集（Junqi）2025</p>
         </footer>
     </div>
+    <script src="../lazy-mathjax.js"></script>
     <script src="PressureDrop_script.js"></script>
     
     <!-- Formula Details Modal -->

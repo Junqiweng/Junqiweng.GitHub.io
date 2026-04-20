@@ -97,7 +97,7 @@ $$
 Yagi-Kunii / Wakao-Kaguei模型：
 
 $$
-k_{axial} = C_{disp,a} \times \rho_f C_p u d_p
+k_{axial} = k_0 + C_{disp,a} \rho_f C_p u d_p = k_0 + C_{disp,a} k_f Re_p Pr
 $$
 
 - 推荐 \(C_{disp,a} \approx 0.5\)
@@ -110,14 +110,15 @@ $$
 Dixon-Cresswell模型：
 
 $$
-k_{radial} = \frac{\rho_f C_p u d_p}{K_5}
+k_{radial} = k_0 + \frac{\rho_f C_p u d_p}{K_5} = k_0 + k_f \frac{Re_p Pr}{K_5}
 $$
 
 $$
-K_5 = 8.65 \left(1 + 1.94 \left(\frac{d_p}{d_t}\right)^2 \right)
+K_5 = 8.65 \left(1 + 19.4 \left(\frac{d_p}{d_t}\right)^2 \right)
 $$
 
 - \(K_5\) 考虑了壁面效应
+- \(k_0\) 为静态有效导热系数；有效轴向/径向导热系数应包含静态项与动态弥散项
 - 适用于不同管径与颗粒比
 
 ---

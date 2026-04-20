@@ -119,44 +119,48 @@ $$
 
 ---
 
-### 5.2 Gnielinski
+### 5.2 Gnielinski固定床传热关联式
 
 $$
-Nu = 2 + \sqrt{Nu_{lam}^2 + Nu_{turb}^2}
+Nu = f_a\left(2 + \sqrt{Nu_{lam}^2 + Nu_{turb}^2}\right)
 $$
 
 其中：
 
 $$
-Nu_{lam} = 0.664 Re^{0.5} Pr^{1/3}
+f_a = 1 + 1.5(1-\varepsilon)
 $$
 
 $$
-Nu_{turb} = \frac{0.037 Re^{0.8} Pr}{1 + 2.443 Re^{-0.1} (Pr^{2/3} - 1)}
+Nu_{lam} = 0.664 \left(\frac{Re_p}{\varepsilon}\right)^{0.5} Pr^{1/3}
 $$
 
-- 适用范围广，层流湍流均适用。
+$$
+Nu_{turb} = \frac{0.037 (Re_p/\varepsilon)^{0.8} Pr}{1 + 2.443 (Re_p/\varepsilon)^{-0.1} (Pr^{2/3} - 1)}
+$$
+
+- 使用 $Re_p/\varepsilon$ 表示间隙速度基准，$f_a$ 表示床层增强因子。
 
 ---
 
-### 5.3 Dittus-Boelter
+### 5.3 Dittus-Boelter（管内流参考）
 
 $$
 Nu = 0.023 Re^{0.8} Pr^{n}
 $$
 
 - \(n=0.4\)（加热），\(n=0.3\)（冷却）
-- 适用于高Re湍流区。
+- 该式为管内湍流传热参考式，不是固定床颗粒外传热关联式；本页不默认启用。
 
 ---
 
-### 5.4 Hausen
+### 5.4 Hausen（管内流参考）
 
 $$
 Nu = 0.037 Re^{0.8} Pr^{1/3}
 $$
 
-- 简化湍流模型，适合中高Re。
+- 该式为管内流传热参考式，不是固定床颗粒外传热关联式；本页不默认启用。
 
 ---
 
@@ -180,8 +184,8 @@ $$
 
 - 低Re、稀疏床层优先采用Ranz-Marshall或Froessling模型。
 - 密集床层、宽Re范围建议采用Wakao-Funazkri或Rowe模型。
-- 传热计算中，Gnielinski模型适用范围最广，推荐优先使用。
-- 高Re湍流区可采用Dittus-Boelter或Hausen模型。
+- 传热计算中，Gnielinski固定床模型适用范围较广，推荐优先使用。
+- Dittus-Boelter和Hausen仅作为管内流数量级参考，不应作为固定床颗粒外传热设计式。
 - 设计中建议多模型对比，取合理范围。
 - 注意参数单位一致，特别是扩散系数和颗粒尺寸。
 

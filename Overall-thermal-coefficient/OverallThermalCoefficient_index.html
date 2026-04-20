@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>综合传热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://polyfill.io">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <!-- 预加载MathJax -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" as="script" crossorigin="anonymous">
     <!-- 引入全局样式表 -->
     <link rel="stylesheet" href="../global-styles.css">
     <style>
@@ -297,35 +293,24 @@
             document.getElementById('loading-overlay').classList.add('show');
         });
     </script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
     <script>
         window.MathJax = {
-            loader: {
-                load: ['[tex]/ams']
-            },
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true,
-                packages: {'[+]': ['ams']}
+                processEscapes: true
             },
-            svg: {
-                fontCache: 'global',
-                scale: 1.2
+            chtml: {
+                scale: 1.05
             },
             options: {
-                enableMenu: false,
-                renderActions: {
-                    addMenu: [], // 禁用右键菜单
-                    checkLoading: []
-                }
+                enableMenu: false
             },
             startup: {
-                typeset: true
+                typeset: false
             }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
 </head>
 <body>
     <!-- 加载指示器 -->
@@ -472,6 +457,7 @@
         <p>固定床反应器工具集 &copy; 2023 - 综合传热系数计算器</p>
     </footer>
 
+    <script src="../lazy-mathjax.js"></script>
     <script src="OverallThermalCoefficient_script.js"></script>
 </body>
 </html>

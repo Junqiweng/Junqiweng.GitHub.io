@@ -28,9 +28,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 设置所有关联式子默认选中
     const correlationCheckboxes = document.querySelectorAll('.correlation-item input[type="checkbox"]');
-    correlationCheckboxes.forEach(checkbox => {
-        checkbox.checked = true;
-    });
+    function setDefaultCorrelationSelection() {
+        correlationCheckboxes.forEach(checkbox => {
+            checkbox.checked = !['dittus_boelter_heat', 'hausen_heat'].includes(checkbox.id);
+        });
+    }
+    setDefaultCorrelationSelection();
 
     // Default Values
     const defaultValues = {
@@ -51,10 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (element) element.value = value;
         }
         
-        // 重置时也确保所有关联式子被选中
-        correlationCheckboxes.forEach(checkbox => {
-            checkbox.checked = true;
-        });
+        // 管内流参考式不作为气固传热默认模型
+        setDefaultCorrelationSelection();
     }
 
     // Clear Function
@@ -145,11 +146,13 @@ document.addEventListener('DOMContentLoaded', function() {
             results.heatTransfer.ranzMarshall = { Nu: Nu_rm, h: h_rm };
         }
 
-        // Gnielinski correlation
+        // Gnielinski 固定床传热关联式；Re/ε 使用间隙速度基准，并含床层增强因子
         if (document.getElementById('gnielinski').checked) {
-            const Nu_lam = 0.664 * Math.sqrt(Re) * Math.pow(Pr, 1/3);
-            const Nu_turb = (0.037 * Math.pow(Re, 0.8) * Pr) / (1 + 2.443 * Math.pow(Re, -0.1) * (Math.pow(Pr, 2/3) - 1));
-            const Nu_gn = 2 + Math.sqrt(Nu_lam**2 + Nu_turb**2);
+            const Re_i = Re / inputs.voidFraction;
+            const bedEnhancement = 1 + 1.5 * (1 - inputs.voidFraction);
+            const Nu_lam = 0.664 * Math.sqrt(Re_i) * Math.pow(Pr, 1/3);
+            const Nu_turb = (0.037 * Math.pow(Re_i, 0.8) * Pr) / (1 + 2.443 * Math.pow(Re_i, -0.1) * (Math.pow(Pr, 2/3) - 1));
+            const Nu_gn = bedEnhancement * (2 + Math.sqrt(Nu_lam**2 + Nu_turb**2));
             const h_gn = (Nu_gn * inputs.fluidThermalConductivity) / inputs.particleDiameter;
             results.heatTransfer.gnielinski = { Nu: Nu_gn, h: h_gn };
         }
@@ -289,27 +292,29 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>`
         },
         gnielinski: {
-            title: "Gnielinski传热关联式详解",
-            formula: "\\[ Nu = 2 + \\sqrt{Nu_{lam}^2 + Nu_{turb}^2} \\] \\[ Nu_{lam} = 0.664Re^{0.5}Pr^{1/3} \\] \\[ Nu_{turb} = \\frac{0.037Re^{0.8}Pr}{1+2.443Re^{-0.1}(Pr^{2/3}-1)} \\] \\[ h = \\frac{Nu k_f}{d_p} \\]",
+            title: "Gnielinski固定床传热关联式详解",
+            formula: "\\[ Nu = f_a\\left(2 + \\sqrt{Nu_{lam}^2 + Nu_{turb}^2}\\right) \\] \\[ f_a = 1 + 1.5(1-\\varepsilon) \\] \\[ Nu_{lam} = 0.664\\left(\\frac{Re_p}{\\varepsilon}\\right)^{0.5}Pr^{1/3} \\] \\[ Nu_{turb} = \\frac{0.037\\left(Re_p/\\varepsilon\\right)^{0.8}Pr}{1+2.443\\left(Re_p/\\varepsilon\\right)^{-0.1}(Pr^{2/3}-1)} \\] \\[ h = \\frac{Nu k_f}{d_p} \\]",
             parameters: [
                 ["Nu", "Nusselt数", "代表对流传热与热传导的比值"],
                 ["Nu_{lam}", "层流Nusselt数", "层流条件下的Nusselt数贡献"],
                 ["Nu_{turb}", "湍流Nusselt数", "湍流条件下的Nusselt数贡献"],
-                ["Re", "Reynolds数", "表征流体的惯性力与粘性力的比值"],
+                ["Re_p", "颗粒Reynolds数", "基于表观速度和颗粒直径"],
+                ["\\varepsilon", "床层空隙率", "用于间隙速度修正和床层增强因子"],
                 ["Pr", "Prandtl数", "表征动量扩散与热扩散的比值"],
                 ["h", "传热系数", "描述传热过程的速率系数"],
                 ["k_f", "流体热导率", "描述流体传导热量的能力"],
                 ["d_p", "颗粒直径", "填充颗粒的特征尺寸"]
             ],
-            theory: `<p><strong>Gnielinski关联式</strong>是一种更加复杂的传热关联式，考虑了层流和湍流的共同影响。</p>
+            theory: `<p><strong>Gnielinski固定床关联式</strong>在单球换热式基础上引入空隙率修正和床层增强因子，适用于填充床颗粒-流体传热估算。</p>
             <p>关键特点：</p>
             <ul>
                 <li>分别计算层流和湍流的Nusselt数贡献</li>
                 <li>通过平方和的平方根进行组合，平滑过渡区域</li>
                 <li>湍流部分包含复杂的Prandtl数修正</li>
+                <li>使用Re_p/ε体现间隙速度基准，并以f_a修正床层效应</li>
                 <li>常数项2代表纯传导贡献</li>
             </ul>
-            <p>这种复杂结构使得该关联式在从低Reynolds数到高Reynolds数的整个范围内都能提供较好的预测。</p>`,
+            <p>该式应优先作为本页固定床传热模型使用。</p>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -406,8 +411,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>`
         },
         dittus_boelter_heat: {
-            title: "Dittus-Boelter传热关联式详解",
-            formula: "\\[ Nu = 0.023Re^{0.8}Pr^{n} \\] \\[ h = \\frac{Nu k_f}{d_p} \\]",
+            title: "Dittus-Boelter管内流参考式详解",
+            formula: "\\[ Nu = 0.023Re^{0.8}Pr^{n} \\] \\[ h = \\frac{Nu k_f}{D_h} \\]",
             parameters: [
                 ["Nu", "Nusselt数", "代表对流传热与热传导的比值"],
                 ["Re", "Reynolds数", "表征流体的惯性力与粘性力的比值"],
@@ -415,17 +420,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 ["n", "指数", "加热时取0.4，冷却时取0.3"],
                 ["h", "传热系数", "描述传热过程的速率系数"],
                 ["k_f", "流体热导率", "描述流体传导热量的能力"],
-                ["d_p", "颗粒直径", "填充颗粒的特征尺寸"]
+                ["D_h", "水力直径", "管内流特征长度；不是颗粒外传热特征长度"]
             ],
-            theory: `<p><strong>Dittus-Boelter关联式</strong>最初是为管内湍流传热开发的，后被修改应用于填充床计算。</p>
+            theory: `<p><strong>Dittus-Boelter关联式</strong>是管内湍流传热参考式，不是颗粒-流体外传热关联式。</p>
             <p>关键特点：</p>
             <ul>
                 <li>没有常数项，仅适用于较高Reynolds数条件</li>
                 <li>形式简单，容易应用</li>
                 <li>Prandtl数指数n随加热/冷却工况而变</li>
-                <li>较高的Reynolds数指数(0.8)体现了湍流传热的显著影响</li>
+                <li>仅保留为管内流数量级对照，不建议用于固定床颗粒外传热设计</li>
             </ul>
-            <p>尽管结构简单，在湍流区域内该关联式仍能提供合理的传热系数估计。</p>`,
+            <p>本页若启用该项，应只作为参考，不参与固定床颗粒外传热的推荐设计值。</p>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -446,25 +451,26 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>`
         },
         hausen_heat: {
-            title: "Hausen传热关联式详解",
-            formula: "\\[ Nu = 0.037Re^{0.8}Pr^{1/3} \\] \\[ h = \\frac{Nu k_f}{d_p} \\]",
+            title: "Hausen管内流参考式详解",
+            formula: "\\[ Nu = 0.037Re^{0.8}Pr^{1/3} \\] \\[ h = \\frac{Nu k_f}{D_h} \\]",
             parameters: [
                 ["Nu", "Nusselt数", "代表对流传热与热传导的比值"],
                 ["Re", "Reynolds数", "表征流体的惯性力与粘性力的比值"],
                 ["Pr", "Prandtl数", "表征动量扩散与热扩散的比值"],
                 ["h", "传热系数", "描述传热过程的速率系数"],
                 ["k_f", "流体热导率", "描述流体传导热量的能力"],
-                ["d_p", "颗粒直径", "填充颗粒的特征尺寸"]
+                ["D_h", "水力直径", "管内流特征长度；不是颗粒外传热特征长度"]
             ],
-            theory: `<p><strong>Hausen关联式</strong>是一种简化的湍流传热关联式，形式接近Dittus-Boelter关联式但系数不同。</p>
+            theory: `<p><strong>Hausen关联式</strong>是管内流传热参考式，不是固定床颗粒外传热关联式。</p>
             <p>关键特点：</p>
             <ul>
                 <li>没有常数项，主要适用于湍流区域</li>
                 <li>系数0.037略高于Dittus-Boelter的0.023</li>
                 <li>Prandtl数指数固定为1/3，不区分加热/冷却</li>
                 <li>由于简化，在原始公式中忽略了一些修正因子</li>
+                <li>仅保留为管内流数量级对照，不建议用于固定床颗粒外传热设计</li>
             </ul>
-            <p>这个关联式在工程计算中常用作快速估算传热系数的方法。</p>`,
+            <p>本页若启用该项，应只作为参考，不参与固定床颗粒外传热的推荐设计值。</p>`,
             applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -485,6 +491,53 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>`
         }
     };
+
+    const formulaReferences = {
+        ranz_marshall: [
+            { text: "Ranz, W. E.; Marshall, W. R. (1952). Evaporation from drops. Chemical Engineering Progress, 48, 141-146.", url: "https://hero.epa.gov/hero/index.cfm/reference/details/reference_id/759740" }
+        ],
+        wakao_funazkri: [
+            { text: "Wakao, N.; Funazkri, T. (1978). Effect of fluid dispersion coefficients on particle-to-fluid mass transfer coefficients in packed beds. Chemical Engineering Science, 33, 1375-1384.", url: "https://doi.org/10.1016/0009-2509(78)85120-3" }
+        ],
+        ranz_marshall_heat: [
+            { text: "Ranz, W. E.; Marshall, W. R. (1952). Evaporation from drops. Chemical Engineering Progress, 48, 141-146.", url: "https://hero.epa.gov/hero/index.cfm/reference/details/reference_id/759740" }
+        ],
+        gnielinski: [
+            { text: "Gnielinski fixed/packed-bed heat-transfer correlation summarized in ht.conv_packed_bed.", url: "https://ht.readthedocs.io/en/latest/_modules/ht/conv_packed_bed.html" }
+        ],
+        froessling_mass: [
+            { text: "Frössling, N. (1938). Über die Verdunstung fallender Tropfen. Gerlands Beiträge zur Geophysik, 52, 170-216.", url: "https://scholar.google.com/scholar?q=Fr%C3%B6ssling+1938+%C3%9Cber+die+Verdunstung+fallender+Tropfen" }
+        ],
+        rowe_mass: [
+            { text: "Rowe particle-to-fluid mass-transfer correlation; literature search entry for original source confirmation.", url: "https://scholar.google.com/scholar?q=Rowe+particle+fluid+mass+transfer+Sherwood+packed+bed" }
+        ],
+        dittus_boelter_heat: [
+            { text: "Dittus, F. W.; Boelter, L. M. K. (1930). Heat transfer in automobile radiators of the tubular type. University of California Publications in Engineering, 2, 443-461.", url: "https://scholar.google.com/scholar?q=Dittus+Boelter+1930+Heat+transfer+in+automobile+radiators+of+the+tubular+type" }
+        ],
+        hausen_heat: [
+            { text: "Hausen, H. (1943). Darstellung des Wärmeüberganges in Rohren durch verallgemeinerte Potenzbeziehungen. VDI Beihefte Verfahrenstechnik.", url: "https://scholar.google.com/scholar?q=Hausen+1943+Darstellung+des+W%C3%A4rme%C3%BCberganges+in+Rohren" }
+        ]
+    };
+
+    function renderFormulaReferences(formulaId) {
+        const references = formulaReferences[formulaId] || [];
+        if (!references.length) return '';
+
+        return `
+                <div class="formula-section references-section">
+                    <h4>
+                        <span class="section-icon">📚</span>
+                        <span class="section-title">参考文献</span>
+                    </h4>
+                    <div class="theory-content">
+                        <div class="theory-card">
+                            <ul>
+                                ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+    }
 
     // Display Results Function
     function displayResults(results) {
@@ -534,15 +587,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (results.heatTransfer.gnielinski) {
             hValues.push(results.heatTransfer.gnielinski.h);
-            heatTransferNames.push("Gnielinski");
+            heatTransferNames.push("Gnielinski固定床");
         }
         if (results.heatTransfer.dittusBoelter) {
             hValues.push(results.heatTransfer.dittusBoelter.h);
-            heatTransferNames.push("Dittus-Boelter");
+            heatTransferNames.push("Dittus-Boelter管内参考");
         }
         if (results.heatTransfer.hausen) {
             hValues.push(results.heatTransfer.hausen.h);
-            heatTransferNames.push("Hausen");
+            heatTransferNames.push("Hausen管内参考");
         }
         
         const hMinValue = Math.min(...hValues);
@@ -930,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tr>
                         <td>
                             <div class="equation-name">
-                                Gnielinski
+                                Gnielinski固定床
                                 <a href="#" class="info-link correlation-info" data-correlation="gnielinski" title="查看公式">ℹ️</a>
                             </div>
                         </td>
@@ -959,7 +1012,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tr>
                         <td>
                             <div class="equation-name">
-                                Dittus-Boelter
+                                Dittus-Boelter管内参考
                                 <a href="#" class="info-link correlation-info" data-correlation="dittus_boelter_heat" title="查看公式">ℹ️</a>
                             </div>
                         </td>
@@ -988,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tr>
                         <td>
                             <div class="equation-name">
-                                Hausen
+                                Hausen管内参考
                                 <a href="#" class="info-link correlation-info" data-correlation="hausen_heat" title="查看公式">ℹ️</a>
                             </div>
                         </td>
@@ -1079,7 +1132,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const correlationId = this.dataset.correlation;
                 showFormulaDetails(correlationId);
-                showModal();
             });
         });
     }
@@ -1087,21 +1139,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal Functionality
     async function showModal() {
         modal.style.display = "block";
-        loadingOverlay.classList.add('show');
-        
-        try {
-            if (window.MathJax) {
-                if (typeof MathJax.typesetPromise === 'function') {
-                    await MathJax.typesetPromise([modal]);
-                } else if (typeof MathJax.typeset === 'function') {
-                    MathJax.typeset([modal]);
-                }
-            }
-        } catch (error) {
-            console.error('Error rendering MathJax:', error);
-        } finally {
-            loadingOverlay.classList.remove('show');
-        }
+        loadingOverlay.classList.remove('show');
 
         const firstFocusable = modal.querySelector(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -1199,6 +1237,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>` : ''}
                     </div>
                 </div>
+                ${renderFormulaReferences(formulaId)}
             </div>
         `;
 
@@ -1232,35 +1271,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         detailContent.innerHTML = content;
-        
-        if (window.MathJax) {
-            MathJax.typesetPromise([detailContent]).then(() => {
-                // 确保所有MathJax元素都在顶层
-                document.querySelectorAll('.formula-math .MathJax').forEach(element => {
-                    element.style.zIndex = "100";
-                    element.style.color = "#000000";
-                    element.style.opacity = "1";
-                    element.style.fontWeight = "500";
-                    
-                    // 处理MathJax内部的所有元素
-                    const allMathElements = element.querySelectorAll('*');
-                    allMathElements.forEach(el => {
-                        el.style.color = "#000000";
-                        el.style.opacity = "1";
-                    });
-                });
-                
-                // 为公式区域添加额外样式以增强显示效果
-                document.querySelectorAll('.formula-math').forEach(mathContainer => {
-                    mathContainer.style.background = "#ffffff";
-                    mathContainer.style.border = "2px solid #4A90E2";
-                });
-                
-                // 额外调用增强函数
-                enhanceFormulas();
-            }).catch(error => {
-                console.error('MathJax typesetting error:', error);
-            });
+
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(detailContent);
+            setTimeout(enhanceFormulas, 600);
+        } else {
+            enhanceFormulas();
         }
         
         showModal().catch(error => {
@@ -1277,7 +1293,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const link = e.target.closest('.correlation-info');
             const formulaId = link.dataset.correlation;
             if (formulaId) {
-                loadingOverlay.classList.add('show');
                 try {
                     modal.style.display = "block";
                     await showFormulaDetails(formulaId);
@@ -1287,17 +1302,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadingOverlay.classList.remove('show');
                 }
             }
-        }
-    });
-
-    // Performance optimization for navigation
-    document.querySelectorAll('a[href]').forEach(link => {
-        if (link.hostname === window.location.hostname) {
-            // Preload same-domain pages
-            let prefetcher = document.createElement('link');
-            prefetcher.rel = 'prefetch';
-            prefetcher.href = link.href;
-            document.head.appendChild(prefetcher);
         }
     });
 

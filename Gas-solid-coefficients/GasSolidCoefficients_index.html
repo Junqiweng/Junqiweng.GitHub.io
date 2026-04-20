@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>气固传质和传热系数计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://polyfill.io">
     <!-- 引入全局样式表 -->
     <link rel="stylesheet" href="../global-styles.css">
     <style>
@@ -114,11 +113,6 @@
             document.getElementById('loading-overlay').classList.add('show');
         });
     </script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <!-- Load MathJax -->
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
     <script>
         window.MathJax = {
             tex: {
@@ -131,7 +125,7 @@
                 scale: 1.2
             },
             startup: {
-                typeset: true
+                typeset: false
             },
             options: {
                 enableMenu: false
@@ -238,17 +232,17 @@
                             </label>
                             <label class="correlation-item">
                                 <input type="checkbox" id="gnielinski" checked>
-                                <span>📊 Gnielinski关联式</span>
+                                <span>📊 Gnielinski固定床关联式</span>
                                 <a href="#" class="info-link correlation-info" data-correlation="gnielinski">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="dittus_boelter_heat" checked>
-                                <span>📊 Dittus-Boelter关联式</span>
+                                <input type="checkbox" id="dittus_boelter_heat">
+                                <span>📊 Dittus-Boelter管内流参考式</span>
                                 <a href="#" class="info-link correlation-info" data-correlation="dittus_boelter_heat">ℹ️ 查看公式</a>
                             </label>
                             <label class="correlation-item">
-                                <input type="checkbox" id="hausen_heat" checked>
-                                <span>📊 Hausen关联式</span>
+                                <input type="checkbox" id="hausen_heat">
+                                <span>📊 Hausen管内流参考式</span>
                                 <a href="#" class="info-link correlation-info" data-correlation="hausen_heat">ℹ️ 查看公式</a>
                             </label>
                         </div>
@@ -296,6 +290,7 @@
         </footer>
     </div>
 
+    <script src="../lazy-mathjax.js"></script>
     <script src="GasSolidCoefficients_script.js"></script>
     
     <!-- Formula Details Modal -->

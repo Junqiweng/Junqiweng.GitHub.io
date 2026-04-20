@@ -300,75 +300,102 @@ function calculateLarkinsWhiteJeffrey(L, ε, dp, uL, uG, ρL, ρG, μL, μG) {
     return ΔP;
 }
 
-// 3. Sato模型
+// 3. Sato et al. Lockhart-Martinelli型经验关联式
 function calculateSatoModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ) {
-    // 单相压降
     const ΔPL = calculateSinglePhasePressureDrop(L, ε, dp, uL, ρL, μL);
-    
-    // 计算液相雷诺数和气相雷诺数
-    const ReL = ρL * uL * dp / μL;
-    const ReG = ρG * uG * dp / μG;
-    
-    // 计算韦伯数
-    const We = ρL * uL * uL * dp / σ;
-    
-    // Sato修正因子，适用于高气液比的工况
-    let φL2 = 1 + 25 * Math.pow(uG / uL, 0.8) * Math.pow(ReG / ReL, 0.3) * Math.pow(We, -0.15);
-    
-    // 限制修正因子的范围
-    φL2 = Math.max(1, Math.min(φL2, 50));
-    
-    // 计算两相压降
-    const ΔP = ΔPL * φL2;
-    
-    return ΔP;
-}
+    const ΔPG = calculateSinglePhasePressureDrop(L, ε, dp, uG, ρG, μG);
+    const X = Math.sqrt(ΔPL / ΔPG);
 
-// 4. Attou-Boyer-Ferschneider模型
-function calculateAttouBoyerFerschneider(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ) {
-    // 计算特征参数
-    const ReL = ρL * uL * dp / μL;
-    const αG = uG / (uL + uG); // 气相体积分率估计
-    
-    // 计算气液界面摩擦系数
-    const fGL = 0.3 / ReL; // 简化的气液界面摩擦系数
-    
-    // 计算颗粒床阻力系数
-    const κ = 150 * ((1-ε)*(1-ε)) / (ε*ε*ε) + 1.75 * (1-ε) / (ε*ε*ε) * ReL;
-    
-    // 计算三相作用下的压降
-    const ΔP = (κ * μL * uL / (dp*dp) + fGL * ρL * uL * uL / dp) * (1 + 3 * αG) * L;
-    
-    return ΔP;
-}
-
-// 5. Holub模型
-function calculateHolubModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ, D) {
-    // 计算特征参数
-    const ReL = ρL * uL * dp / μL;
-    const ReG = ρG * uG * dp / μG;
-    const We = ρL * uL * uL * dp / σ;
-    const Fr = uL * uL / (9.81 * dp); // Froude数
-    
-    // 计算流型参数，用于判断是否为脉动流
-    const flowParameterΨ = ReL * Math.pow(ReG, 0.4) * Math.pow(Fr, -0.6);
-    
-    let φL2;
-    
-    // 根据流型选择不同的压降计算模型
-    if (flowParameterΨ < 100) {
-        // 涓流区域 - 使用修正的Lockhart-Martinelli关联式
-        const X = Math.sqrt(calculateSinglePhasePressureDrop(L, ε, dp, uL, ρL, μL) / calculateSinglePhasePressureDrop(L, ε, dp, uG, ρG, μG));
-        φL2 = 1 + 20/X + 1/(X*X);
-    } else {
-        // 脉动流区域 - 考虑更高的压降
-        φL2 = 1 + 60 * Math.pow(uG / uL, 0.9) * Math.pow(ReG / ReL, 0.2) * Math.pow(We, -0.1);
+    if (!Number.isFinite(X) || X <= 0) {
+        throw new Error('Sato关联式无法计算：Martinelli参数X必须为正有限值。');
     }
-    
-    // 计算总压降
-    const ΔP = calculateSinglePhasePressureDrop(L, ε, dp, uL, ρL, μL) * φL2;
-    
-    return ΔP;
+
+    // Sato et al. 常用写法以 φ_L 表示液相两相乘子，压降使用 φ_L^2。
+    const φL = 1.30 + 1.85 * Math.pow(X, -0.85);
+    return ΔPL * φL * φL;
+}
+
+// 4. Attou-Boyer-Ferschneider型三相阻力闭合
+function calculateAttouBoyerFerschneider(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ) {
+    const αMin = 0.02;
+    const αMax = 0.98;
+
+    function calcForceBalance(αG) {
+        const liquidSaturation = 1 - αG;
+        const εG = ε * αG;
+        const εL = ε * liquidSaturation;
+        const uGi = uG / εG;
+        const uLi = uL / εL;
+        const ε3 = ε ** 3;
+
+        // Attou型闭合中的液-固阻力项，单位为 Pa/m。
+        const ALS = 150 * ((1 - ε) ** 2) / ((liquidSaturation ** 3) * ε3 * (dp ** 2));
+        const BLS = 1.75 * (1 - ε) / ((liquidSaturation ** 3) * ε3 * dp);
+        const FLS = ALS * μL * uLi + BLS * ρL * uLi * uLi;
+
+        // 气-液界面阻力项；结构因子来自部分被液体占据孔隙的水力直径修正。
+        const gasVoidFactor = Math.max(1 - ε * αG, 1e-12);
+        const structureFactor = Math.pow((1 - ε) / gasVoidFactor, 1 / 3);
+        const AGL = 150 * (gasVoidFactor ** 2) / ((αG ** 3) * ε3 * (dp ** 2)) * structureFactor;
+        const BGL = 1.75 * gasVoidFactor / ((αG ** 3) * ε3 * dp) * structureFactor;
+        const uRel = Math.abs(uGi - uLi);
+        const FGL = εG * (AGL * μG * uRel + BGL * ρG * uRel * uRel);
+
+        const residual = FGL - αG * FLS;
+        const dPdz = FGL / Math.max(εG, 1e-12);
+        return { residual, dPdz };
+    }
+
+    let lower = αMin;
+    let upper = αMax;
+    let previousAlpha = lower;
+    let previous = calcForceBalance(previousAlpha);
+    let bestAlpha = previousAlpha;
+    let best = previous;
+    let bracket = null;
+
+    for (let i = 1; i <= 240; i++) {
+        const αG = αMin + (αMax - αMin) * i / 240;
+        const current = calcForceBalance(αG);
+        if (Math.abs(current.residual) < Math.abs(best.residual)) {
+            bestAlpha = αG;
+            best = current;
+        }
+        if (previous.residual * current.residual <= 0) {
+            bracket = [previousAlpha, αG];
+            break;
+        }
+        previousAlpha = αG;
+        previous = current;
+    }
+
+    if (bracket) {
+        lower = bracket[0];
+        upper = bracket[1];
+        for (let i = 0; i < 80; i++) {
+            const mid = 0.5 * (lower + upper);
+            const fLower = calcForceBalance(lower);
+            const fMid = calcForceBalance(mid);
+            if (fLower.residual * fMid.residual <= 0) {
+                upper = mid;
+            } else {
+                lower = mid;
+            }
+        }
+        bestAlpha = 0.5 * (lower + upper);
+        best = calcForceBalance(bestAlpha);
+    }
+
+    if (!Number.isFinite(best.dPdz) || best.dPdz <= 0) {
+        throw new Error('Attou-Boyer-Ferschneider模型无法得到正的压降梯度。');
+    }
+
+    return best.dPdz * L;
+}
+
+// 5. Holub原始模型需要液持率-压降联立；未实现时不输出伪数值
+function calculateHolubModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ, D) {
+    throw new Error('Holub原始模型需要液持率、滑移因子和单相Ergun常数联立求解；当前版本不输出未经文献核实的简化压降。');
 }
 
 // Formula details data
@@ -452,72 +479,68 @@ const formulaDetails = {
 </div>`
     },
     sato_model: {
-        title: "Sato模型详解",
-        formula: "\\[ \\Delta P_{TP} = \\Delta P_L \\cdot \\phi_L^2, \\quad \\text{其中} \\quad \\phi_L^2 = 1 + 25 \\left(\\frac{u_G}{u_L}\\right)^{0.8} \\left(\\frac{Re_G}{Re_L}\\right)^{0.3} We^{-0.15} \\]",
+        title: "Sato et al. 关联式详解",
+        formula: "\\[ \\Delta P_{TP} = \\Delta P_L \\phi_L^2, \\quad \\phi_L = 1.30 + 1.85X^{-0.85}, \\quad X = \\sqrt{\\frac{\\Delta P_L}{\\Delta P_G}} \\]",
         parameters: [
             ["ΔP_TP", "两相流压降", "气液两相流通过床层的总压降"],
             ["ΔP_L", "液相单相压降", "仅液相通过床层的压降"],
-            ["φ_L^2", "两相流系数", "液相压降的修正系数"],
-            ["u_G", "气相表观速度", "基于空管截面的气相表观流速"],
-            ["u_L", "液相表观速度", "基于空管截面的液相表观流速"],
-            ["Re_G", "气相雷诺数", "气相流体的雷诺数"],
-            ["Re_L", "液相雷诺数", "液相流体的雷诺数"],
-            ["We", "韦伯数", "惯性力与表面张力的比值"]
+            ["ΔP_G", "气相单相压降", "仅气相通过床层的压降"],
+            ["φ_L", "液相两相乘子", "Sato关联式给出的液相压降乘子"],
+            ["X", "Martinelli参数", "液相与气相单相压降比值的平方根"]
         ],
-        theory: `<p><strong>Sato模型</strong>是专为高气液通量条件下的涓流床反应器设计的压降模型。</p>
+        theory: `<p><strong>Sato et al. 关联式</strong>采用Lockhart-Martinelli型参数X描述两相压降增大效应。</p>
         <p>该模型的主要特点：</p>
         <ul>
-            <li>引入韦伯数(We)考虑表面张力对压降的影响</li>
-            <li>同时考虑气相和液相雷诺数的比值，更全面地描述相间作用</li>
-            <li>通过经验系数25调整，适用于高气液流速工况</li>
+            <li>分别计算液相、气相单独通过填充床的压降</li>
+            <li>用X = (ΔP<sub>L</sub>/ΔP<sub>G</sub>)<sup>1/2</sup> 表示相对流动阻力</li>
+            <li>用φ<sub>L</sub><sup>2</sup>将液相单相压降换算为两相压降</li>
         </ul>
-        <p>在高气液比条件下，该模型考虑了更复杂的流动形态，预测精度优于经典Lockhart-Martinelli方程。</p>`,
+        <p>该式仍属于经验关联式，超出原实验范围时应进行装置标定或与其他模型交叉验证。</p>`,
         applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于高气液流速工况</span>
+        <span class="condition-text">适用于可用Lockhart-Martinelli参数描述的涓流床两相压降</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">考虑表面张力影响的情况</span>
-    </div>
-    <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">脉动流和过渡流区域预测较好</span>
+        <span class="condition-text">建议范围：0.1 &lt; X &lt; 20</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✗</span>
-        <span class="condition-text">超低液相雷诺数时可能预测不准</span>
+        <span class="condition-text">不显式包含表面张力、润湿效率和流型转变</span>
+    </div>
+    <div class="condition-item">
+        <span class="condition-icon">✗</span>
+        <span class="condition-text">不应外推到强脉动流、喷射流或明显液泛区域</span>
     </div>
 </div>`
     },
     attou_boyer_ferschneider: {
-        title: "Attou-Boyer-Ferschneider模型详解",
-        formula: "\\[ \\Delta P = \\left( \\kappa \\frac{\\mu_L u_L}{d_p^2} + f_{GL} \\frac{\\rho_L u_L^2}{d_p} \\right) (1 + 3\\alpha_G) L \\]",
+        title: "Attou-Boyer-Ferschneider型三相阻力闭合详解",
+        formula: "\\[ F_{LS}=A_{LS}\\mu_Lu_{Li}+B_{LS}\\rho_Lu_{Li}^2, \\quad F_{GL}=\\varepsilon_G(A_{GL}\\mu_Gu_r+B_{GL}\\rho_Gu_r^2), \\quad F_{GL}=\\alpha_GF_{LS}, \\quad \\Delta P=L\\frac{F_{GL}}{\\varepsilon_G} \\]",
         parameters: [
             ["ΔP", "两相流压降", "气液两相流通过床层的总压降"],
-            ["κ", "床层阻力系数", "由Ergun方程计算的床层阻力系数"],
-            ["μ_L", "液体粘度", "液体的动力粘度"],
-            ["u_L", "液相表观速度", "液相表观流速"],
-            ["d_p", "颗粒直径", "填充颗粒的特征直径"],
-            ["f_GL", "气液界面摩擦系数", "气液两相间的摩擦系数"],
-            ["ρ_L", "液体密度", "液体密度"],
-            ["α_G", "气相体积分率", "反应器中气相占据的体积比例"],
-            ["L", "床层高度", "反应器床层的总高度"]
+            ["F_LS", "液-固阻力", "单位床层体积内液相与固体颗粒之间的阻力，单位Pa/m"],
+            ["F_GL", "气-液界面阻力", "单位床层体积内气液界面阻力，单位Pa/m"],
+            ["α_G", "气相饱和度", "气相占床层空隙体积的比例"],
+            ["ε_G", "气相持率", "ε_G = εα_G"],
+            ["u_Li, u_Gi", "相内速度", "由表观速度除以对应相持率得到"],
+            ["A_LS, B_LS", "液-固阻力系数", "Ergun型粘性项和惯性项系数"],
+            ["A_GL, B_GL", "气-液阻力系数", "气液界面Ergun型粘性项和惯性项系数"]
         ],
-        theory: `<p><strong>Attou-Boyer-Ferschneider模型</strong>是一种基于多相流力学的理论模型，考虑了气液固三相间的相互作用。</p>
+        theory: `<p><strong>Attou-Boyer-Ferschneider型模型</strong>将涓流床看作气、液、固三相相互作用体系，通过液-固和气-液阻力闭合求解气相饱和度。</p>
         <p>该模型的关键思想：</p>
         <ul>
-            <li>将床层中的流动视为气液固三相系统，而不仅是两相流</li>
-            <li>考虑固体颗粒与流体间的摩擦、气液界面摩擦等多种作用力</li>
-            <li>引入气相体积分率(α_G)作为关键参数，影响总压降</li>
-            <li>将Ergun方程的床层阻力与气液界面阻力结合，获得更全面的模型</li>
+            <li>液-固阻力采用Ergun型粘性项与惯性项</li>
+            <li>气-液界面阻力采用孔隙占据修正后的Ergun型系数</li>
+            <li>通过F<sub>GL</sub> = α<sub>G</sub>F<sub>LS</sub>求解稳态摩擦压降闭合</li>
+            <li>当前实现忽略轴向加速度和重力项，输出摩擦压降</li>
         </ul>
-        <p>这是一个更为理论化的模型，适用于各种操作条件和流型。</p>`,
+        <p>该实现已删除旧版任意的(1+3α<sub>G</sub>)经验放大项，但仍应视为Attou型摩擦闭合实现，而非完整含重力/惯性项的一维CFD模型。</p>`,
         applicability: `<div class="applicability-conditions">
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于各种气液流速工况</span>
+        <span class="condition-text">适用于稳态、均匀涓流区的摩擦压降估算</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
@@ -529,52 +552,105 @@ const formulaDetails = {
     </div>
     <div class="condition-item">
         <span class="condition-icon">✗</span>
-        <span class="condition-text">计算复杂度高于其他模型</span>
+        <span class="condition-text">不包含液泛、脉动流转变、轴向加速度和重力压头</span>
     </div>
 </div>`
     },
     holub_model: {
-        title: "Holub模型详解",
-        formula: "\\[ \\Delta P_{TP} = \\Delta P_L \\cdot \\phi_L^2, \\quad \\text{其中} \\quad \\phi_L^2 = \\begin{cases} 1 + \\frac{20}{X} + \\frac{1}{X^2}, & \\text{涓流区域 } (\\Psi < 100) \\\\ 1 + 60 \\left(\\frac{u_G}{u_L}\\right)^{0.9} \\left(\\frac{Re_G}{Re_L}\\right)^{0.2} We^{-0.1}, & \\text{脉动流区域 } (\\Psi \\geq 100) \\end{cases} \\]",
+        title: "Holub原始模型状态说明",
+        formula: "\\[ \\text{当前版本不计算Holub压降。原模型需联立液持率、压降、滑移/剪切因子和单相Ergun常数。} \\]",
         parameters: [
-            ["ΔP_TP", "两相流压降", "气液两相流通过床层的总压降"],
-            ["ΔP_L", "液相单相压降", "仅液相通过床层的压降"],
-            ["φ_L^2", "两相流系数", "液相压降的修正系数，取决于流型"],
-            ["X", "Martinelli参数", "液相与气相压降比值的平方根"],
-            ["Ψ", "流型参数", "判断流型的无量纲参数"],
-            ["Re_G", "气相雷诺数", "气相流体的雷诺数"],
-            ["Re_L", "液相雷诺数", "液相流体的雷诺数"],
-            ["We", "韦伯数", "惯性力与表面张力的比值"]
+            ["ΔP_TP", "两相流压降", "Holub模型的目标输出之一"],
+            ["H_L", "液持率", "与压降联立求解的关键状态变量"],
+            ["E_1, E_2", "Ergun常数", "由单相流数据确定的床层参数"],
+            ["f_s, f_v", "滑移/剪切因子", "扩展Holub模型中的相间相互作用修正"],
+            ["流型判据", "涓流-脉动转变", "原模型还包含流型转变判据"]
         ],
-        theory: `<p><strong>Holub模型</strong>的独特之处在于它根据流型自动选择不同的关联式，是一种"智能"压降模型。</p>
-        <p>该模型的核心亮点：</p>
+        theory: `<p><strong>Holub模型</strong>是孔尺度/狭缝型现象模型，用于同时预测压降、液持率和涓流-脉动流转变。</p>
+        <p>本计算器不再输出旧版简化切换式，原因如下：</p>
         <ul>
-            <li>引入流型参数Ψ = Re<sub>L</sub>·Re<sub>G</sub><sup>0.4</sup>·Fr<sup>-0.6</sup>，用于判断流型</li>
-            <li>在涓流区域(Ψ < 100)采用修正的Lockhart-Martinelli关联式</li>
-            <li>在脉动流区域(Ψ ≥ 100)采用针对高气液流速的改进关联式</li>
-            <li>考虑了雷诺数、韦伯数和弗劳德数等多种无量纲参数的影响</li>
+            <li>原模型不是单一φ<sub>L</sub><sup>2</sup>经验切换式</li>
+            <li>压降与液持率需要联立求解</li>
+            <li>扩展模型还需要滑移和剪切因子，公开摘要不足以完整复现</li>
         </ul>
-        <p>这种"自动切换"的特性使其在宽广的操作条件范围内具有良好的适用性。</p>`,
+        <p>在完整文献公式和参数表补齐前，Holub项保持禁用，避免给出看似精确但不可追溯的压降值。</p>`,
         applicability: `<div class="applicability-conditions">
     <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">适用于广泛的流型和操作条件</span>
+        <span class="condition-icon">✗</span>
+        <span class="condition-text">当前版本禁用数值计算</span>
     </div>
     <div class="condition-item">
         <span class="condition-icon">✓</span>
-        <span class="condition-text">自动选择适合的关联式</span>
+        <span class="condition-text">可作为后续实现液持率-压降联立模型的文档占位</span>
     </div>
     <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">考虑重力、惯性和表面张力多种效应</span>
+        <span class="condition-icon">✗</span>
+        <span class="condition-text">不可与旧版简化流型切换式等同</span>
     </div>
     <div class="condition-item">
-        <span class="condition-icon">✓</span>
-        <span class="condition-text">流型过渡区预测较准确</span>
+        <span class="condition-icon">✗</span>
+        <span class="condition-text">需要原文方程、参数和求解策略后才能启用</span>
     </div>
 </div>`
     }
 };
+
+const formulaReferences = {
+    lockhart_martinelli: [
+        {
+            text: "Lockhart, R. W.; Martinelli, R. C. (1949). Proposed correlation of data for isothermal two-phase, two-component flow in pipes. Chemical Engineering Progress, 45, 39-48.",
+            url: "https://scholar.google.com/scholar?q=Lockhart+Martinelli+1949+Proposed+correlation+of+data+for+isothermal+two-phase+two-component+flow"
+        }
+    ],
+    larkins_white_jeffrey: [
+        {
+            text: "Larkins, R. P.; White, R. R.; Jeffrey, D. W. Trickle-bed pressure-drop correlation source and later model comparisons.",
+            url: "https://www.sciencedirect.com/science/article/abs/pii/0009250988871045"
+        }
+    ],
+    sato_model: [
+        {
+            text: "Sato, Y.; Hirose, T.; Takahashi, F.; Toda, M. (1973). Pressure drop and liquid holdup in gas-liquid concurrent flow in granular beds. Journal of Chemical Engineering of Japan, 6, 147-152.",
+            url: "https://doi.org/10.1252/jcej.6.147"
+        },
+        {
+            text: "Walas, S. M. Chemical Process Equipment: Selection and Design, Fig. 6.9; public scan with Sato correlation.",
+            url: "https://enky-afina.ru/f/710_chemical_process_equipment_selection_and_design_stm_walas.pdf"
+        }
+    ],
+    attou_boyer_ferschneider: [
+        {
+            text: "Attou, A.; Boyer, C.; Ferschneider, G. (1999). Modelling of the hydrodynamics of the cocurrent gas-liquid trickle flow through a trickle-bed reactor. Chemical Engineering Science, 54, 785-802.",
+            url: "https://doi.org/10.1016/S0009-2509(98)00285-1"
+        }
+    ],
+    holub_model: [
+        {
+            text: "Holub, R. A.; Dudukovic, M. P.; Ramachandran, P. A. (1992). A phenomenological model for pressure drop, liquid holdup, and flow regime transition in gas-liquid trickle flow. Chemical Engineering Science, 47, 2343-2348.",
+            url: "https://doi.org/10.1016/0009-2509(92)87058-X"
+        }
+    ]
+};
+
+function renderFormulaReferences(formulaId) {
+    const references = formulaReferences[formulaId] || [];
+    if (!references.length) return '';
+
+    return `
+            <div class="formula-section references-section">
+                <h4>
+                    <span class="section-icon">📚</span>
+                    <span class="section-title">参考文献</span>
+                </h4>
+                <div class="theory-content">
+                    <div class="theory-card">
+                        <ul>
+                            ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>`;
+}
 
 // Function to show modal with animation
 async function showModal() {
@@ -668,27 +744,23 @@ async function showFormulaDetail(formulaId) {
                     </div>` : ''}
                 </div>
             </div>
+            ${renderFormulaReferences(formulaId)}
         </div>
     `;
 
     detailContent.innerHTML = content;
-    
-    // 使用Promise确保MathJax渲染完成
-    if (window.MathJax) {
-        try {
-            await MathJax.typesetPromise([detailContent]);
-            // 确保公式元素已完全渲染
-            document.querySelectorAll('.mjx-chtml').forEach(el => {
-                el.style.overflow = 'visible';
-                el.style.maxWidth = 'none';
-            });
-        } catch (error) {
-            console.error('MathJax typesetting error:', error);
-        }
-    }
-    
+
     try {
         await showModal();
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(detailContent);
+            setTimeout(() => {
+                document.querySelectorAll('.mjx-chtml').forEach(el => {
+                    el.style.overflow = 'visible';
+                    el.style.maxWidth = 'none';
+                });
+            }, 600);
+        }
     } catch (error) {
         console.error('Error showing modal:', error);
     } finally {
@@ -722,13 +794,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const formulaId = link.getAttribute('data-formula');
             
             if (formulaId) {
-                loadingOverlay.classList.add('show');
                 try {
                     modal.style.display = "block";
                     await showFormulaDetail(formulaId);
-                    if (window.MathJax) {
-                        await MathJax.typesetPromise([modal]);
-                    }
                 } catch (error) {
                     console.error('显示公式详情时出错:', error);
                 } finally {
@@ -789,18 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('input-error');
         });
     });
-    
-    // Performance optimization for navigation
-    document.querySelectorAll('a[href]').forEach(link => {
-        if (link.hostname === window.location.hostname) {
-            // Preload same-domain pages
-            let prefetcher = document.createElement('link');
-            prefetcher.rel = 'prefetch';
-            prefetcher.href = link.href;
-            document.head.appendChild(prefetcher);
-        }
-    });
-    
+
     // Calculate button functionality
     const calculateBtn = document.getElementById('calculate');
     calculateBtn.addEventListener('click', calculatePressureDrop);
@@ -948,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const value = calculateSatoModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ);
                 results.push({
                     id: 'sato_model',
-                    name: 'Sato模型',
+                    name: 'Sato et al. 关联式',
                     value: value
                 });
             }
@@ -957,18 +1014,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const value = calculateAttouBoyerFerschneider(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ);
                 results.push({
                     id: 'attou_boyer_ferschneider',
-                    name: 'Attou-Boyer-Ferschneider模型',
+                    name: 'Attou-Boyer-Ferschneider型三相阻力闭合',
                     value: value
                 });
             }
             
             if (selectedEquations.holub_model) {
-                const value = calculateHolubModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ, D);
-                results.push({
-                    id: 'holub_model',
-                    name: 'Holub模型',
-                    value: value
-                });
+                calculateHolubModel(L, ε, dp, uL, uG, ρL, ρG, μL, μG, σ, D);
             }
             
             // Display results
@@ -987,4 +1039,4 @@ document.addEventListener('DOMContentLoaded', function() {
             loadingOverlay.classList.remove('show');
         }
     }
-}); 
+});

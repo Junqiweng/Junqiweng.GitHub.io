@@ -281,7 +281,8 @@ function calculateDixonWithWall(L, ε, dp, u0, ρ, μ, N, alpha = 0.564) {
     const Re = (ρ * u0 * dp) / μ;
     const Re_m = Re / (1 - ε);
     const term1 = (160 / Re_m) * (1 + (2 * alpha) / (3 * (1 - ε) * N))**2;
-    const term2 = (0.922 + (16 / (Re_m**0.46))) * (Re_m / (Re_m + 52));
+    const wallDamping = 1 - Math.exp(-0.22 * N);
+    const term2 = (0.922 + (16 * wallDamping / (Re_m**0.46))) * (Re_m / (Re_m + 52));
     return (L * ρ * u0 ** 2 / dp * (1 - ε) / ε ** 3) * (term1 + term2);
 }
 
@@ -419,7 +420,7 @@ const formulaDetails = {
     },
     dixon_with_wall: {
         title: "Dixon方程(有壁面效应)详解",
-        formula: "\\[ \\frac{\\Delta P}{L} = \\frac{\\rho u_0^2(1-\\varepsilon)}{\\varepsilon^3 d_p} \\left[ \\frac{160}{Re_m}\\left(1 + \\frac{2\\alpha}{3(1-\\varepsilon)N}\\right)^2 + \\left(0.922 + \\frac{16}{Re_m^{0.46}}\\right)\\frac{Re_m}{Re_m+52} \\right] \\]",
+        formula: "\\[ \\frac{\\Delta P}{L} = \\frac{\\rho u_0^2(1-\\varepsilon)}{\\varepsilon^3 d_p} \\left[ \\frac{160}{Re_m}\\left(1 + \\frac{2\\alpha}{3(1-\\varepsilon)N}\\right)^2 + \\left(0.922 + \\frac{16(1-e^{-0.22N})}{Re_m^{0.46}}\\right)\\frac{Re_m}{Re_m+52} \\right] \\]",
         parameters: [
             ["L", "床层高度", "固定床反应器中填料的总高度"],
             ["ρ", "流体密度", "流体密度"],
@@ -436,6 +437,7 @@ const formulaDetails = {
             <li>通过引入管径比(N)和壁面系数(α)，更准确地描述了壁面效应对压降的影响</li>
             <li>壁面系数α通常取值为0.564（球形颗粒）</li>
             <li>修正项(1 + 2α/3(1-ε)N)<sup>2</sup>考虑了近壁区域流动变化</li>
+            <li>惯性过渡项中的(1-e<sup>-0.22N</sup>)用于描述有限管径比下的壁效应衰减</li>
         </ul>
         <p>该方程特别适用于管径较小的反应器，当N<30时，壁面效应变得显著。</p>`,
         applicability: `<div class="applicability-conditions">
@@ -499,6 +501,95 @@ const formulaDetails = {
     }
 };
 
+const formulaReferences = {
+    ergun: [
+        {
+            text: "Ergun, S. (1952). Fluid flow through packed columns. Chemical Engineering Progress, 48(2), 89-94.",
+            url: "https://www.sciencedirect.com/science/article/abs/pii/S0032591011001410"
+        }
+    ],
+    eisfeld_schnitzlein: [
+        {
+            text: "Eisfeld, B.; Schnitzlein, K. (2001). The influence of confining walls on the pressure drop in packed beds. Chemical Engineering Science, 56, 4321-4329.",
+            url: "https://doi.org/10.1016/S0009-2509(00)00533-9"
+        }
+    ],
+    dixon_no_wall: [
+        {
+            text: "Dixon, A. G. (2023). General correlation for pressure drop through randomly-packed beds of spheres with negligible wall effects. AIChE Journal, 69, e18035.",
+            url: "https://doi.org/10.1002/aic.18035"
+        }
+    ],
+    dixon_with_wall: [
+        {
+            text: "Dixon, A. G. (2024). Are there wall effects on pressure drop through randomly packed beds of spherical catalyst particles? AIChE Journal, 70, e18272.",
+            url: "https://doi.org/10.1002/aic.18272"
+        }
+    ],
+    kta: [
+        {
+            text: "KTA 3102.3 / pebble-bed pressure-drop friction factor reference used in nuclear fixed-bed evaluations.",
+            url: "https://www.sciencedirect.com/science/article/pii/S0029549321001655"
+        }
+    ]
+};
+
+function renderFormulaReferences(formulaId) {
+    const references = formulaReferences[formulaId] || [];
+    if (!references.length) return '';
+
+    return `
+            <div class="formula-section references-section">
+                <h4>
+                    <span class="section-icon">📚</span>
+                    <span class="section-title">参考文献</span>
+                </h4>
+                <div class="theory-content">
+                    <div class="theory-card">
+                        <ul>
+                            ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>`;
+}
+
+let mathJaxLoadPromise = null;
+
+function ensureMathJaxReady(timeoutMs = 5000) {
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        return Promise.resolve(window.MathJax);
+    }
+
+    if (mathJaxLoadPromise) {
+        return mathJaxLoadPromise;
+    }
+
+    mathJaxLoadPromise = new Promise((resolve) => {
+        if (!document.getElementById('MathJax-script')) {
+            const script = document.createElement('script');
+            script.id = 'MathJax-script';
+            script.async = true;
+            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+            script.onerror = () => resolve(null);
+            document.head.appendChild(script);
+        }
+
+        const startedAt = Date.now();
+        const timer = setInterval(() => {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                clearInterval(timer);
+                resolve(window.MathJax);
+            } else if (Date.now() - startedAt > timeoutMs) {
+                clearInterval(timer);
+                resolve(null);
+            }
+        }, 50);
+    });
+
+    return mathJaxLoadPromise;
+}
+
 // Function to show formula details
 async function showFormulaDetails(formulaId) {
     const formula = formulaDetails[formulaId];
@@ -515,9 +606,8 @@ async function showFormulaDetails(formulaId) {
                     <span class="section-icon">📐</span>
                     <span class="section-title">数学表达式</span>
                 </h4>
-                <div class="formula-math loading" data-formula="${formulaId}">
+                <div class="formula-math" data-formula="${formulaId}">
                     ${formula.formula}
-                    <div class="formula-overlay"></div>
                 </div>
             </div>
             
@@ -575,23 +665,38 @@ async function showFormulaDetails(formulaId) {
                     </div>` : ''}
                 </div>
             </div>
+            ${renderFormulaReferences(formulaId)}
         </div>
     `;
 
     detailContent.innerHTML = content;
-    if (window.MathJax) {
-        MathJax.typesetPromise([detailContent]).then(() => {
-            detailContent.querySelectorAll('.formula-math.loading').forEach(el => {
-                el.classList.remove('loading');
-            });
-        }).catch(error => {
-            console.error('MathJax typesetting error:', error);
-        });
+
+    const modal = document.getElementById('formulaModal');
+    modal.style.display = 'block';
+
+    const firstFocusable = modal.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (firstFocusable) firstFocusable.focus();
+
+    const renderMath = async () => {
+        const mathJax = await ensureMathJaxReady();
+        if (mathJax) {
+            try {
+                await mathJax.typesetPromise([detailContent]);
+            } catch (error) {
+                console.error('MathJax typesetting error:', error);
+            }
+        }
+
+        detailContent.querySelectorAll('.formula-math.loading').forEach(el => el.classList.remove('loading'));
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(renderMath, { timeout: 1500 });
+    } else {
+        window.setTimeout(renderMath, 300);
     }
-    showModal().catch(error => {
-        console.error('Error showing modal:', error);
-        loadingOverlay.classList.remove('show');
-    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -622,6 +727,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingOverlay.classList.remove('show');
     });
 
+    // 从浏览器后退缓存恢复页面时，避免保留离开前的加载遮罩。
+    window.addEventListener('pageshow', function() {
+        loadingOverlay.classList.remove('show');
+    });
+
     // Show loading indicator when navigating away
     window.addEventListener('beforeunload', function() {
         loadingOverlay.classList.add('show');
@@ -635,15 +745,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const link = e.target.closest('.info-link, .equation-info');
             const formulaId = link.dataset.formula;
             if (formulaId) {
-                loadingOverlay.classList.add('show');
                 try {
-                    modal.style.display = "block";
                     await showFormulaDetails(formulaId);
-                    // 移除重复的 MathJax 渲染调用，避免加载卡死
                 } catch (error) {
                     console.error('Error showing formula details:', error);
-                } finally {
-                    loadingOverlay.classList.remove('show');
                 }
             }
         }
@@ -689,17 +794,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('input', function() {
             this.classList.remove('input-error');
         });
-    });
-
-    // Performance optimization for navigation
-    document.querySelectorAll('a[href]').forEach(link => {
-        if (link.hostname === window.location.hostname) {
-            // Preload same-domain pages
-            let prefetcher = document.createElement('link');
-            prefetcher.rel = 'prefetch';
-            prefetcher.href = link.href;
-            document.head.appendChild(prefetcher);
-        }
     });
 
     // Default values for reset
@@ -857,55 +951,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal functionality
     const modal = document.getElementById('formulaModal');
     const modalClose = document.querySelector('.modal-close');
-    
-    // Load MathJax dynamically
-    async function loadMathJax() {
-        if (window.MathJax) {
-            return Promise.resolve(window.MathJax);
-        }
-
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML';
-            script.async = true;
-            script.onload = () => {
-                window.MathJax.Hub.Config({
-                    tex2jax: {
-                        inlineMath: [['$', '$'], ['\\(', '\\)']],
-                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                        processEscapes: true
-                    }
-                });
-                resolve(window.MathJax);
-            };
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
-    async function showModal() {
-        modal.style.display = "block";
-        loadingOverlay.classList.add('show');
-        
-        try {
-            await loadMathJax();
-            if (window.MathJax && window.MathJax.Hub) {
-                window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, modal]);
-                await new Promise(resolve => {
-                    window.MathJax.Hub.Queue(() => resolve());
-                });
-            }
-        } catch (error) {
-            console.error('Error rendering MathJax:', error);
-        } finally {
-            loadingOverlay.classList.remove('show');
-        }
-
-        const firstFocusable = modal.querySelector(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (firstFocusable) firstFocusable.focus();
-    }
 
     function hideModal() {
         modal.style.display = 'none';

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>涓流床反应器压降计算器</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://polyfill.io">
     <!-- 引入全局样式表 -->
     <link rel="stylesheet" href="../global-styles.css">
     <style>
@@ -119,11 +118,6 @@
         window.addEventListener('beforeunload', function() {
             document.getElementById('loading-overlay').classList.add('show');
         });
-    </script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6" defer></script>
-    <!-- Load MathJax -->
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
     </script>
     <script>
         window.MathJax = {
@@ -241,20 +235,20 @@
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="sato_model" checked>
-                            <span>📊 Sato模型</span>
-                            <small>(高气液通量条件下的压降模型)</small>
+                            <span>📊 Sato et al. 关联式</span>
+                            <small>(Lockhart-Martinelli型实验关联式)</small>
                             <a href="#" class="info-link equation-info" data-formula="sato_model">ℹ️ 查看公式</a>
                         </label>
                         <label class="equation-item">
                             <input type="checkbox" id="attou_boyer_ferschneider" checked>
-                            <span>📊 Attou-Boyer-Ferschneider模型</span>
-                            <small>(考虑气液固三相相互作用的模型)</small>
+                            <span>📊 Attou-Boyer-Ferschneider型三相阻力闭合</span>
+                            <small>(稳态摩擦压降闭合)</small>
                             <a href="#" class="info-link equation-info" data-formula="attou_boyer_ferschneider">ℹ️ 查看公式</a>
                         </label>
                         <label class="equation-item">
-                            <input type="checkbox" id="holub_model" checked>
-                            <span>📊 Holub模型</span>
-                            <small>(基于流型判断的压降计算模型)</small>
+                            <input type="checkbox" id="holub_model" disabled>
+                            <span>📊 Holub原始模型（待实现）</span>
+                            <small>(需液持率-压降联立)</small>
                             <a href="#" class="info-link equation-info" data-formula="holub_model">ℹ️ 查看公式</a>
                         </label>
                     </div>
@@ -300,6 +294,7 @@
             <p>© 固定床反应器工具集（Junqi）2025</p>
         </footer>
     </div>
+    <script src="../lazy-mathjax.js"></script>
     <script src="TrickleBedPressureDrop_script.js"></script>
     
     <!-- Formula Details Modal -->
@@ -318,4 +313,4 @@
         <div style="margin-top: 15px; color: var(--primary-color)">加载中...</div>
     </div>
 </body>
-</html> 
+</html>

@@ -265,7 +265,7 @@ const formulaDetails = {
     },
     yagi_wakao: {
         title: "Yagi & Wakao壁面传热关联式",
-        formula: "\\[ \\frac{h_w d_t}{k_f} = \\begin{cases} 0.6 \\cdot \\mathrm{Re}_p^{0.5} & \\text{for } \\mathrm{Re}_p < 40 \\\\ 0.2 \\cdot \\mathrm{Re}_p^{0.8} & \\text{for } \\mathrm{Re}_p \\geq 40 \\end{cases} \\]",
+        formula: "\\[ \\frac{h_w d_p}{k_f} = \\begin{cases} 0.6 \\cdot \\mathrm{Re}_p^{0.5} & \\text{for } \\mathrm{Re}_p < 40 \\\\ 0.2 \\cdot \\mathrm{Re}_p^{0.8} & \\text{for } \\mathrm{Re}_p \\geq 40 \\end{cases} \\]",
         parameters: [
             ["<i>h</i><sub>w</sub>", "壁面传热系数", "固定床反应器壁面传热系数"],
             ["<i>d</i><sub>p</sub>", "颗粒直径", "填充颗粒的直径"],
@@ -493,6 +493,44 @@ const formulaDetails = {
     }
 };
 
+const formulaReferences = {
+    li_finlayson: [{ text: "Li, C. H.; Finlayson, B. A. (1977). Heat transfer in packed beds. Chemical Engineering Science, 32, 1055.", url: "https://scholar.google.com/scholar?q=Li+Finlayson+1977+heat+transfer+packed+beds+Chemical+Engineering+Science+1055" }],
+    leva: [{ text: "Leva, M. (1947). Heat transfer to gases through packed tubes. Industrial & Engineering Chemistry, 39, 857.", url: "https://scholar.google.com/scholar?q=Leva+1947+heat+transfer+to+gases+through+packed+tubes" }],
+    martin_nilles: [{ text: "Martin, H.; Nilles, M. (1993). Heat transfer at the wall of packed beds. Chemie Ingenieur Technik, 65, 1468.", url: "https://scholar.google.com/scholar?q=Martin+Nilles+1993+wall+heat+transfer+packed+beds" }],
+    demirel_et_al: [{ text: "Demirel, Y.; Sharma, R. N.; Al-Ali, H. H. (2000). On the effective heat transfer parameters in a packed bed. International Journal of Heat and Mass Transfer, 43, 327.", url: "https://scholar.google.com/scholar?q=Demirel+Sharma+Al-Ali+2000+packed+bed+wall+heat+transfer" }],
+    laguerre_et_al: [{ text: "Laguerre, O.; Ben Amara, S.; Flick, D. (2006). Heat transfer between wall and packed bed. Applied Thermal Engineering, 26, 1951.", url: "https://scholar.google.com/scholar?q=Laguerre+Ben+Amara+Flick+2006+heat+transfer+packed+bed" }],
+    das_et_al: [{ text: "Das, S.; Deen, N. G.; Kuipers, J. A. M. (2017). Heat transfer to a gas from densely packed beds of cylindrical particles. Chemical Engineering Science, 172, 1-12.", url: "https://doi.org/10.1016/j.ces.2017.06.003" }],
+    leva_et_al: [{ text: "Leva, M.; Weintraub, M.; Grummer, M.; Clark, E. L. (1948). Heat transfer through packed tubes. Industrial & Engineering Chemistry, 40, 747.", url: "https://scholar.google.com/scholar?q=Leva+Weintraub+Grummer+Clark+1948+heat+transfer+packed+tubes" }],
+    chu_storrow: [{ text: "Quinton, J. H.; Storrow, J. A. (1952). Heat transfer to gas flowing through packed tubes. Chemical Engineering Science, 1, 230.", url: "https://scholar.google.com/scholar?q=Quinton+Storrow+1952+heat+transfer+packed+tubes" }],
+    yagi_wakao: [{ text: "Yagi, S.; Wakao, N. (1959). Heat and mass transfer from wall to fluid in packed beds. AIChE Journal, 5, 79-85.", url: "https://doi.org/10.1002/aic.690050118" }],
+    kunii_et_al: [{ text: "Kunii, D.; Suzuki, M.; Ono, N. (1968). Heat transfer from wall to fluid in packed beds. Journal of Chemical Engineering of Japan, 1, 21.", url: "https://scholar.google.com/scholar?q=Kunii+Suzuki+Ono+1968+wall+heat+transfer+packed+beds" }],
+    olbrich_potter: [{ text: "Olbrich, W. E.; Potter, O. E. (1972). Heat transfer in packed beds. Chemical Engineering Science, 27, 567-576.", url: "https://doi.org/10.1016/0009-2509(72)87012-X" }],
+    specchia_et_al: [{ text: "Specchia, V.; Baldi, G.; Sicardi, S. (1980). Heat transfer in packed bed reactors with one phase flow. Chemical Engineering Communications, 4, 361.", url: "https://scholar.google.com/scholar?q=Specchia+Baldi+Sicardi+1980+heat+transfer+packed+bed+reactors" }],
+    colledge_paterson: [{ text: "Colledge, R. A.; Paterson, W. R. (1984). Wall heat transfer in packed beds. Proc. 11th Annual Research Meeting, 103-108.", url: "https://scholar.google.com/scholar?q=Colledge+Paterson+1984+wall+heat+transfer+packed+beds" }],
+    dixon_et_al: [{ text: "Dixon, A. G.; DiCostanzo, M. A.; Soucy, B. A. (1984). Fluid-phase radial transport in packed beds. International Journal of Heat and Mass Transfer, 27, 1701.", url: "https://scholar.google.com/scholar?q=Dixon+DiCostanzo+Soucy+1984+packed+bed+wall+heat+transfer" }],
+    peters_et_al: [{ text: "Peters, P. E.; Schiffino, R. S.; Harriott, P. (1988). Heat transfer in packed-tube reactors. Industrial & Engineering Chemistry Research, 27, 226-233.", url: "https://doi.org/10.1021/ie00074a003" }]
+};
+
+function renderFormulaReferences(formulaId) {
+    const references = formulaReferences[formulaId] || [];
+    if (!references.length) return '';
+
+    return `
+            <div class="formula-section references-section">
+                <h4>
+                    <span class="section-icon">📚</span>
+                    <span class="section-title">参考文献</span>
+                </h4>
+                <div class="theory-content">
+                    <div class="theory-card">
+                        <ul>
+                            ${references.map(ref => `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.text}</a></li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>`;
+}
+
 // Function to show formula details
 async function showFormulaDetails(formulaId) {
     const formula = formulaDetails[formulaId];
@@ -500,8 +538,6 @@ async function showFormulaDetails(formulaId) {
 
     const detailContent = document.getElementById('formulaDetail');
     const loadingOverlay = document.getElementById('loading-overlay');
-    
-    loadingOverlay.classList.add('show');
 
     let content = `
         <div class="formula-detail">
@@ -571,6 +607,7 @@ async function showFormulaDetails(formulaId) {
                     </div>` : ''}
                 </div>
             </div>
+            ${renderFormulaReferences(formulaId)}
         </div>
     `;
 
@@ -579,39 +616,13 @@ async function showFormulaDetails(formulaId) {
     // 显示模态框
     const modal = document.getElementById('formulaModal');
     modal.style.display = "block";
-    
-    // 确保MathJax已加载
-    if (!window.MathJax) {
-        try {
-            await loadMathJax();
-        } catch (error) {
-            console.error('无法加载MathJax:', error);
-            loadingOverlay.classList.remove('show');
-            return;
-        }
-    }
-    
-    // 渲染公式
-    try {
-        // MathJax 3.x 版本
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            await window.MathJax.typesetPromise([detailContent]);
-        } 
-        // MathJax 2.x 版本
-        else if (window.MathJax && window.MathJax.Hub) {
-            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, detailContent]);
-            // 等待处理完成
-            await new Promise(resolve => {
-                window.MathJax.Hub.Queue(() => resolve());
-            });
-        } else {
-            console.warn("未检测到MathJax渲染方法");
-        }
-    } catch (error) {
-        console.error('MathJax处理公式出错:', error);
-    } finally {
-        // 移除加载状态
+
+    if (loadingOverlay) {
         loadingOverlay.classList.remove('show');
+    }
+
+    if (typeof window.scheduleMathJaxTypeset === 'function') {
+        window.scheduleMathJaxTypeset(detailContent);
     }
 }
 
@@ -909,16 +920,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clear');
     const resetBtn = document.getElementById('reset');
     const resultText = document.querySelector('.result-text');
-
-    // Performance optimization for navigation
-    document.querySelectorAll('a[href]').forEach(link => {
-        if (link.hostname === window.location.hostname) {
-            let prefetcher = document.createElement('link');
-            prefetcher.rel = 'prefetch';
-            prefetcher.href = link.href;
-            document.head.appendChild(prefetcher);
-        }
-    });
 
     // Default values for reset
     const defaultValues = {
@@ -1530,123 +1531,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load MathJax dynamically
     async function loadMathJax() {
-        if (window.MathJax) {
-            return Promise.resolve(window.MathJax);
+        if (typeof window.ensureMathJaxReady === 'function') {
+            return window.ensureMathJaxReady();
         }
-
-        return new Promise((resolve, reject) => {
-            // 尝试加载MathJax 3.x
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
-            script.async = true;
-            script.id = 'MathJax-script';
-            
-            // 设置MathJax配置
-            window.MathJax = {
-                tex: {
-                    inlineMath: [['$', '$'], ['\\(', '\\)']],
-                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                    processEscapes: true,
-                    packages: {'[+]': ['ams']}
-                },
-                svg: {
-                    fontCache: 'global',
-                    scale: 1.1
-                },
-                options: {
-                    enableMenu: false
-                },
-                startup: {
-                    pageReady: function() {
-                        console.log("MathJax已准备就绪");
-                        return MathJax.startup.defaultPageReady();
-                    }
-                }
-            };
-            
-            let timeoutId = setTimeout(() => {
-                console.warn("MathJax加载超时，尝试备用方法");
-                clearTimeout(timeoutId);
-                tryFallback();
-            }, 5000);
-            
-            script.onload = () => {
-                clearTimeout(timeoutId);
-                // 给MathJax一些时间初始化
-                setTimeout(() => resolve(window.MathJax), 200);
-            };
-            
-            script.onerror = () => {
-                clearTimeout(timeoutId);
-                tryFallback();
-            };
-            
-            function tryFallback() {
-                // 如果MathJax 3加载失败，尝试加载MathJax 2
-                console.warn("尝试加载MathJax 2作为备选");
-                const fallbackScript = document.createElement('script');
-                fallbackScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML';
-                fallbackScript.async = true;
-                
-                // 设置MathJax 2配置
-                window.MathJax = {
-                    tex2jax: {
-                        inlineMath: [['$', '$'], ['\\(', '\\)']],
-                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                        processEscapes: true
-                    },
-                    CommonHTML: {
-                        scale: 100,
-                        linebreaks: { automatic: true }
-                    },
-                    "HTML-CSS": {
-                        scale: 100,
-                        linebreaks: { automatic: true }
-                    },
-                    SVG: {
-                        scale: 100,
-                        linebreaks: { automatic: true }
-                    },
-                    showMathMenu: false,
-                    messageStyle: "none"
-                };
-                
-                let fallbackTimeoutId = setTimeout(() => {
-                    console.error("MathJax 2加载也失败");
-                    clearTimeout(fallbackTimeoutId);
-                    reject(new Error("无法加载MathJax"));
-                }, 5000);
-                
-                fallbackScript.onload = () => {
-                    clearTimeout(fallbackTimeoutId);
-                    // 给MathJax 2一些时间初始化
-                    setTimeout(() => {
-                        if (window.MathJax && window.MathJax.Hub) {
-                            window.MathJax.Hub.Config({
-                                tex2jax: {
-                                    inlineMath: [['$', '$'], ['\\(', '\\)']],
-                                    displayMath: [['$$', '$$'], ['\\[', '\\]']]
-                                },
-                                showMathMenu: false,
-                                messageStyle: "none"
-                            });
-                            resolve(window.MathJax);
-                        } else {
-                            reject(new Error("无法初始化MathJax 2"));
-                        }
-                    }, 200);
-                };
-                
-                fallbackScript.onerror = () => {
-                    clearTimeout(fallbackTimeoutId);
-                    reject(new Error("无法加载MathJax"));
-                };
-                
-                document.head.appendChild(fallbackScript);
-            }
-            
-            document.head.appendChild(script);
-        });
+        return Promise.resolve(window.MathJax || null);
     }
 
     async function showModal() {
@@ -1654,28 +1542,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingOverlay = document.getElementById('loading-overlay');
         
         modal.style.display = "block";
-        loadingOverlay.classList.add('show');
-        
-        try {
-            // 确保MathJax已加载
-            if (!window.MathJax) {
-                await loadMathJax();
-            }
-            
-            // 处理公式渲染
-            if (window.MathJax) {
-                if (window.MathJax.typesetPromise) {
-                    await window.MathJax.typesetPromise([modal]);
-                } else if (window.MathJax.Hub) {
-                    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, modal]);
-                    await new Promise(resolve => {
-                        window.MathJax.Hub.Queue(() => resolve());
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Error rendering MathJax:', error);
-        } finally {
+        if (typeof window.scheduleMathJaxTypeset === 'function') {
+            window.scheduleMathJaxTypeset(modal);
+        } else {
+            loadMathJax();
+        }
+
+        if (loadingOverlay) {
             loadingOverlay.classList.remove('show');
         }
 

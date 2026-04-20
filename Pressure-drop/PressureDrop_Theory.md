@@ -81,7 +81,7 @@ $$
 | Ergun方程 | $$\frac{\Delta P}{L} =  \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{150}{Re_m} + 1.75 \right]$$ | 结合层流和湍流效应的经典方程 | 适用于各种雷诺数范围 | 1952 |
 | Eisfeld-Schnitzlein方程 | $$\frac{\Delta P}{L} =  \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{A}{Re_m} + B \right]$$ | 考虑壁面效应和颗粒形状的改进方程 | 适用于广泛的雷诺数和管径比范围 | 2001 |
 | Dixon方程（无壁面效应） | $$\frac{\Delta P}{L} = \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{160}{Re_m} + \left(0.922 + \frac{16}{Re_m^{0.46}}\right)\frac{Re_m}{Re_m+52} \right]$$ | 针对球形颗粒的高精度关联式 | $Re_m$ 范围广泛，从0.01到500,000 | 2023 |
-| Dixon方程（有壁面效应） | $$\frac{\Delta P}{L} = \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{160}{Re_m}\left(1 + \frac{2\alpha}{3(1-\varepsilon)N}\right)^2 + \left(0.922 + \frac{16}{Re_m^{0.46}}\right)\frac{Re_m}{Re_m+52} \right]$$ | 考虑壁面效应的最新关联式 | 适用于小管径反应器，$N$ 在5-25范围 | 2023 |
+| Dixon方程（有壁面效应） | $$\frac{\Delta P}{L} = \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{160}{Re_m}\left(1 + \frac{2\alpha}{3(1-\varepsilon)N}\right)^2 + \left(0.922 + \frac{16(1-e^{-0.22N})}{Re_m^{0.46}}\right)\frac{Re_m}{Re_m+52} \right]$$ | 考虑壁面效应的最新关联式 | 适用于小管径反应器，$N$ 在5-25范围 | 2023 |
 | KTA方程 | $$\frac{\Delta P}{L} = \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \cdot \left( \frac{160}{Re_m} + \frac{3.0}{Re_m^{0.1}} \right)$$ | 核工业推荐的高精度关联式 | 适用于雷诺数1-100,000范围 | 1981 |
 
 ### 4.1 关联式中的特殊参数说明
@@ -98,7 +98,7 @@ $B = \frac{A_w}{B_w}$，其中 $B_w = (k_1 \cdot (\frac{d_p}{D})^2 + k_2)^2$ 是
 
 $Re_m = \frac{Re_p}{1-\varepsilon}$ 是修正雷诺数，考虑了空隙率的影响
 
-Dixon方程（有壁面效应）中，$\alpha = 0.564$ 是描述壁面效应强度的系数，由大量实验数据拟合得到
+Dixon方程（有壁面效应）中，$\alpha = 0.564$ 是描述壁面效应强度的系数，由大量实验数据拟合得到；惯性过渡项中的 $(1-e^{-0.22N})$ 表示有限管径比下壁效应对过渡项的衰减修正。
 
 **KTA方程中的参数：**
 
@@ -190,7 +190,7 @@ $$
 
 Dixon在2023年提出了考虑壁面效应的方程：
 $$
-\frac{\Delta P}{L} = \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{160}{Re_m}\left(1 + \frac{2\alpha}{3(1-\varepsilon)N}\right)^2 + \left(0.922 + \frac{16}{Re_m^{0.46}}\right)\frac{Re_m}{Re_m+52} \right]
+\frac{\Delta P}{L} = \frac{\rho u_0^2(1-\varepsilon)}{\varepsilon^3 d_p} \left[ \frac{160}{Re_m}\left(1 + \frac{2\alpha}{3(1-\varepsilon)N}\right)^2 + \left(0.922 + \frac{16(1-e^{-0.22N})}{Re_m^{0.46}}\right)\frac{Re_m}{Re_m+52} \right]
 $$
 
 其中：

@@ -48,9 +48,11 @@
   * **计算参数**:
 
     * $Nu_{i} = \frac{h_{i} d_p}{\lambda_f}$ (努塞尔数)
+    * $Nu_{w} = \frac{h_{w} d_p}{k_f}$，因此 $h_w = Nu_w k_f/d_p$
     * $Re_p = \frac{\rho u d_p}{\mu}$ (颗粒雷诺数)
     * $Pr = \frac{C_p \mu}{k_f}$ (普朗特数)
     * $Bi = \frac{h_{w} d_p}{\lambda_f}$ (毕渥数)
+    * $k_{er} = k_e + k_f\frac{Re_p Pr}{8.65[1+19.4(d_p/D_t)^2]}$ (径向有效导热系数，包含静态项和径向热弥散项)
 
         其中：
     * $h_{i}$: 床层侧有效传热系数 [W/(m²·K)]
